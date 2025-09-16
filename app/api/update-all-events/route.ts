@@ -98,7 +98,7 @@ function parseDateStringToISO(str: string) {
 export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
-    const apiKey = searchParams.get("secret");
+    const apiKey = searchParams.get("key");
     if (apiKey !== process.env.UPDATE_API_KEY) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

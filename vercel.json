@@ -1,7 +1,7 @@
 {
     "crons": [
       {
-        "path": "/api/update-all-events?secret=@UPDATE-API-KEY",
+        "path": "/api/update-all-events?key=500eae748904efe7ba621a15e8456210a4e555cd34cd10f15368f4a3c96c03d5",
         "schedule": "0 0 * * *"
       }
     ]
