@@ -1,11 +1,8 @@
 {
     "crons": [
       {
-        "path": "/api/update",
-        "schedule": "0 0 * * *",
-        "headers": {
-            "x-api-key": "@update-api-key"
-        }
+        "path": "/api/update-all-events?secret=@UPDATE-API-KEY",
+        "schedule": "0 0 * * *"
       }
     ]
 }
