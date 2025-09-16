@@ -81,7 +81,7 @@ const formatAddress = (addr: any) => {
       addr.Postcode,
       addr.Country,
     ]
-      .filter(Boolean) // remove empty parts
+      .filter(Boolean)
       .join(", ");
 };
 
@@ -96,10 +96,6 @@ function parseDateStringToISO(str: string) {
 }
 
 export async function GET(req: Request) {
-
-    if (req.method !== "POST") {
-        return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
-    }
 
     const apiKey = req.headers.get("x-api-key");
     if (apiKey !== process.env.UPDATE_API_KEY) {
