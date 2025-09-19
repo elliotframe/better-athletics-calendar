@@ -41,9 +41,19 @@ function Pagination({
 }) {
   const pageWindow = 2
   const pages = []
+  const fullWindow = pageWindow*2 + 1
 
-  const start = Math.max(0, pageIndex - pageWindow)
-  const end = Math.min(pageCount - 1, pageIndex + pageWindow)
+  let start = Math.max(0, pageIndex - pageWindow)
+  let end = Math.min(pageCount - 1, pageIndex + pageWindow)
+  const diff = (fullWindow) - (end-start+1)
+  if (diff > 0) {
+    if (pageIndex < pageWindow) {
+      end = Math.min(end + diff, pageCount-1)
+    }
+    if (pageIndex > pageCount-1-pageWindow) {
+      start = Math.max(start - diff, 0)
+    }
+  }
 
   for (let i = start; i <= end; i++) {
     pages.push(i)
@@ -60,6 +70,9 @@ function Pagination({
         >
           Prev
         </Link>
+      )}
+      {pageIndex <= 0 && (
+        <div className="px-3 py-1 border rounded text-gray-600">Prev</div>
       )}
 
       {/* Page numbers */}
@@ -83,6 +96,9 @@ function Pagination({
         >
           Next
         </Link>
+      )}
+      {pageIndex >= pageCount - 1 && (
+        <div className="px-3 py-1 border rounded text-gray-600">Next</div>
       )}
     </div>
   )
