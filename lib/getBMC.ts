@@ -10,6 +10,13 @@ interface MeetingData {
   url: string;
 }
 
+function isNumber(value?: string | number): boolean
+{
+   return ((value != null) &&
+           (value !== '') &&
+           !isNaN(Number(value.toString())));
+}
+
 export async function scrapeBMCEvent(url: string): Promise<MeetingData> {
   const response = await fetch(url);
   const html = await response.text();
@@ -17,6 +24,9 @@ export async function scrapeBMCEvent(url: string): Promise<MeetingData> {
 
   const urlSplit = url.split("-");
   if (urlSplit.length < 3) {
+    throw new Error(`Unexpected URL format: ${url}`);
+  }
+  if (!isNumber(urlSplit[urlSplit.length - 1].slice(0, -1)) || !isNumber(urlSplit[urlSplit.length - 3])) {
     throw new Error(`Unexpected URL format: ${url}`);
   }
   const dateStr = `${urlSplit[urlSplit.length - 3]} ${urlSplit[urlSplit.length - 2].slice(0, 3)} ${urlSplit[urlSplit.length - 1].slice(0, -1)}`;
@@ -62,7 +72,6 @@ export async function scrapeBMCEvent(url: string): Promise<MeetingData> {
 }
 
 export async function getBMCFixtures(): Promise<string[]> {
-    // Step 1: Fetch the page
     const url = "https://www.britishmilersclub.com/fixtures/";
     const response = await fetch(url);
     const html = await response.text();
@@ -70,14 +79,7 @@ export async function getBMCFixtures(): Promise<string[]> {
     const currentYear = new Date().getFullYear().toString();
     const nextYear = (new Date().getFullYear() + 1).toString();
   
-    // Step 2: Parse HTML
     const $ = cheerio.load(html);
-  
-    // Step 3: Extract data
-    // Get page title
-    const title = $("title").text();
-  
-    // Get all links
     const links: string[] = [];
   
     $("a").each((_, el) => {
@@ -95,15 +97,3 @@ export async function getBMCFixtures(): Promise<string[]> {
   
     return links;
   }
-  
-  // Example usage
-  (async () => {
-    const meetingLinks = await getBMCFixtures();
-    console.log("Meeting links:", meetingLinks);
-  
-    // For each link, you could call scrapeBMC(url) to fetch details and store in Firebase
-    // for (const link of meetingLinks) {
-    //   const eventData = await scrapeBMC(link);
-    //   await saveToFirebase(eventData);
-    // }
-  })();
