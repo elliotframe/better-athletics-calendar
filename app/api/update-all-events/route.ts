@@ -90,7 +90,14 @@ const formatAddress = (addr: any) => {
       .join(", ");
 };
 
+function isWithinDateRange(date: string){
+    const dateO = new Date(date);
+    const today = new Date();
+    const msWeek = 1000 * 60 * 60 * 24 * 7;
+    const diff = today.getTime() - dateO.getTime();
 
+    return diff <= msWeek;
+}
 
 function parseDateStringToISO(str: string) {
     const match = str.match(/Date\((\d+),(\d+),(\d+)\)/)
@@ -159,6 +166,7 @@ export async function GET(req: Request) {
         detailJson[0]?.Result?.Result?.EventInfo;
 
         if (!detail) continue;
+        if (!isWithinDateRange(parseDateStringToISO(detail.Starts?.Date))) continue;
         
         const eventId = makeEventIdSA(detail.EventName, parseDateStringToISO(detail.Starts?.Date), detail.EventDocIdHash)
 
@@ -192,18 +200,25 @@ export async function GET(req: Request) {
     const links = await getBMCFixtures();
 
     for (const url of links){
-        const event = await scrapeBMCEvent(url);
-        
-        const eventId = makeEventIdBMC(event.name, event.date)
+        try {
+            const event = await scrapeBMCEvent(url);
 
-        await db.collection("cache").doc(eventId).set({
-            name: event.name,
-            date: event.date,
-            location: event.location,
-            type: event.type,
-            url: event.url,
-            eventId: eventId,
-        })
+            if (!isWithinDateRange(parseDateStringToISO(event.date))) continue;
+       
+            const eventId = makeEventIdBMC(event.name, event.date)
+
+            await db.collection("cache").doc(eventId).set({
+                name: `BMC: ${event.name}`,
+                date: event.date,
+                location: event.location,
+                type: event.type,
+                url: event.url,
+                eventId: eventId,
+            })
+        }
+        catch (e: unknown) {
+            console.log(e);
+        }
     }
 
 
