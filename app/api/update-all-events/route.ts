@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firestore";
+import crypto from "crypto";
+import fetch from "node-fetch";
+import cheerio from "cheerio";
+import { getBMCFixtures, scrapeBMCEvent } from "@/lib/getBMC";
+
 
 const getHeaders = () => ({
     accept: "text/javascript, application/javascript, application/ecmascript, application/x-ecmascript, */*; q=0.01",
@@ -85,6 +90,8 @@ const formatAddress = (addr: any) => {
       .join(", ");
 };
 
+
+
 function parseDateStringToISO(str: string) {
     const match = str.match(/Date\((\d+),(\d+),(\d+)\)/)
     if (!match) return ""
@@ -95,6 +102,20 @@ function parseDateStringToISO(str: string) {
     return `${dateObj.getFullYear()}-${String(dateObj.getMonth()+1).padStart(2,"0")}-${String(dateObj.getDate()).padStart(2,"0")}`
 }
 
+function makeEventIdSA(name: string, date: string, dochash: string) {
+    return crypto
+      .createHash("md5") // or sha256
+      .update((name ?? "") + (date ?? "") + (dochash ?? ""))
+      .digest("hex");
+  }
+
+function makeEventIdBMC(name: string, date: string) {
+    return crypto
+      .createHash("md5") // or sha256
+      .update((name ?? "") + (date ?? ""))
+      .digest("hex");
+  }
+
 export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
@@ -102,6 +123,9 @@ export async function GET(req: Request) {
     if (apiKey !== process.env.UPDATE_API_KEY) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const url = new URL(req.url);
+    const baseUrl = `${url.protocol}//${url.host}`;
 
     const headers = getHeaders();
     const address = getAddress();
@@ -135,33 +159,53 @@ export async function GET(req: Request) {
         detailJson[0]?.Result?.Result?.EventInfo;
 
         if (!detail) continue;
+        
+        const eventId = makeEventIdSA(detail.EventName, parseDateStringToISO(detail.Starts?.Date), detail.EventDocIdHash)
 
-    await db.collection("cache").doc(detail.EventDocIdHash).set({
-        id: detail.DocId,
-        name: detail.EventName ?? "",
-        date: parseDateStringToISO(detail.Starts?.Date),
-        location: detail.EventLocation ?? "",
-        type: detail.EventCategory ?? "",
-        docHash: detail.EventDocIdHash,
+        await db.collection("cache").doc(eventId).set({
+            name: detail.EventName ?? "",
+            date: parseDateStringToISO(detail.Starts?.Date),
+            location: detail.EventLocation ?? "",
+            type: detail.EventCategory ?? "",
+            url: `${baseUrl}/events/${eventId}`,
+            eventId: eventId,
+            });
+
+        await db.collection("events").doc(eventId).set({
+            id: detail.DocId,
+            name: detail.EventName ?? "",
+            starts: parseDateStringToISO(detail.Starts?.Date),
+            ends: parseDateStringToISO(detail.Ends?.Date),
+            location: detail.EventLocation ?? "",
+            latlng: detail.Latlng ?? "",
+            address: {
+                raw: detail.Address,
+                formatted: formatAddress(detail.Address),
+            },
+            detail: detail.EventDetail ?? "",
+            category: detail.EventCategory ?? "",
+            directLink: detail.DirectLink ?? "",
+            docHash: detail.EventDocIdHash,
         });
+    }
 
-    await db.collection("events").doc(detail.EventDocIdHash).set({
-        id: detail.DocId,
-        name: detail.EventName ?? "",
-        starts: parseDateStringToISO(detail.Starts?.Date),
-        ends: parseDateStringToISO(detail.Ends?.Date),
-        location: detail.EventLocation ?? "",
-        latlng: detail.Latlng ?? "",
-        address: {
-            raw: detail.Address,
-            formatted: formatAddress(detail.Address),
-          },
-        detail: detail.EventDetail ?? "",
-        category: detail.EventCategory ?? "",
-        directLink: detail.DirectLink ?? "",
-        docHash: detail.EventDocIdHash,
-      });
-  }
+    const links = await getBMCFixtures();
+
+    for (const url of links){
+        const event = await scrapeBMCEvent(url);
+        
+        const eventId = makeEventIdBMC(event.name, event.date)
+
+        await db.collection("cache").doc(eventId).set({
+            name: event.name,
+            date: event.date,
+            location: event.location,
+            type: event.type,
+            url: event.url,
+            eventId: eventId,
+        })
+    }
+
 
     return NextResponse.json({
         success: true,

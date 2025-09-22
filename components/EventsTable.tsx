@@ -104,6 +104,66 @@ function Pagination({
   )
 }
 
+function MonthFilterControls({
+  selectedMonth
+}: {
+  selectedMonth: string
+}) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  const months = [
+    "01", "02", "03", "04", "05", "06",
+    "07", "08", "09", "10", "11", "12"
+  ]
+
+  const years = [2025, 2026] // customize as needed
+
+  const updateParam = (year: string, month: string) => {
+    const params = new URLSearchParams(searchParams.toString())
+    const after = year.concat('-', month, '-', '01')
+    const before = year.concat('-', month, '-', getLastDayOfMonth(Number(year), Number(month)).toString().padStart(2, '0'))
+    selectedMonth = month
+    params.set("before", before)
+    params.set("after", after)
+    params.set("page", "0") // reset page
+    router.push(`/?${params.toString()}`)
+  }
+
+  function getLastDayOfMonth(year: number, month: number) {
+    return new Date(year, month, 0).getDate()
+  }
+
+
+  return (
+    <div className="flex flex-col gap-2 mb-4">
+      {years.map((year) => (
+        <div key={year} className="flex items-center gap-2">
+          <span className="w-12 font-bold">{year}</span>
+          {months.map((month) => {
+            const monthValue = `${year}-${month}`
+            const isSelected = (selectedMonth === month)
+            return (
+              <button
+                key={month}
+                onClick={() => updateParam(year.toString(), month)}
+                className={`px-2 py-1 border rounded ${
+                  isSelected ? "bg-blue-500 text-white" : "bg-white"
+                }`}
+              >
+                {month}
+              </button>
+            )
+          })}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+
+
+
 export default function EventsTable() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -151,6 +211,7 @@ export default function EventsTable() {
 
   return (
     <div>
+      <MonthFilterControls selectedMonth={searchParams.get("month") || ""} />
       <table className="min-w-full border border-gray-200">
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -170,7 +231,7 @@ export default function EventsTable() {
                 {row.getVisibleCells().map((cell) => (
                   <td key={cell.id} className="p-2 border-b border-gray-200">
                     {cell.column.id === "name" ? (
-                      <Link href={`/event/${row.original.docHash}`} className="text-blue-500 hover:underline">
+                      <Link href={row.original.url} className="text-blue-500 hover:underline">
                         {String(cell.getValue())}
                       </Link>
                     ) : (
