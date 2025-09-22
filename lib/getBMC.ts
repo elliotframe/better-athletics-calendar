@@ -16,6 +16,9 @@ export async function scrapeBMCEvent(url: string): Promise<MeetingData> {
   const $ = cheerio.load(html);
 
   const urlSplit = url.split("-");
+  if (urlSplit.length < 3) {
+    throw new Error(`Unexpected URL format: ${url}`);
+  }
   const dateStr = `${urlSplit[urlSplit.length - 3]} ${urlSplit[urlSplit.length - 2].slice(0, 3)} ${urlSplit[urlSplit.length - 1].slice(0, -1)}`;
   const date = new Date(dateStr).toISOString().split("T")[0];
 
@@ -73,7 +76,6 @@ export async function getBMCFixtures(): Promise<string[]> {
     // Step 3: Extract data
     // Get page title
     const title = $("title").text();
-    console.log("Page title:", title);
   
     // Get all links
     const links: string[] = [];
@@ -81,9 +83,13 @@ export async function getBMCFixtures(): Promise<string[]> {
     $("a").each((_, el) => {
       const linkUrl = $(el).attr("href") ?? "";
       const text = $(el).text().trim();
+
+      const fullUrl = linkUrl.startsWith("http") 
+        ? linkUrl 
+        : `https://www.britishmilersclub.com${linkUrl}`;
   
-      if (linkUrl.includes("meeting") && (text.includes(currentYear) || text.includes(nextYear))) {
-        links.push(linkUrl);
+      if (fullUrl.includes("meeting") && (text.includes(currentYear) || text.includes(nextYear))) {
+        links.push(fullUrl);
       }
     });
   
