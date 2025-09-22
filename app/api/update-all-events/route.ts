@@ -135,7 +135,7 @@ export async function GET(req: Request) {
         headers,
         body: JSON.stringify(getAllEventsPayload()),
     });
-    const allEventsJson = await response.json();
+    const allEventsJson: any = await response.json();
 
     const eventsSummary: any[] =
         allEventsJson[0]?.Result?.Result?.Data?.map((e: any) => ({
@@ -154,7 +154,7 @@ export async function GET(req: Request) {
         headers,
         body: JSON.stringify(detailPayload),
         });
-        const detailJson = await detailRes.json();
+        const detailJson: any = await detailRes.json();
         const detail =
         detailJson[0]?.Result?.Result?.EventInfo;
 
