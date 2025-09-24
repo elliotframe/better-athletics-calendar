@@ -131,7 +131,12 @@ function MonthFilterControls({
     "07", "08", "09", "10", "11", "12"
   ]
 
-  const years = [2025, 2026] // customize as needed
+  function getYears() {
+    const year = new Date().getFullYear();
+    return [year, year+1]
+  }
+
+  const years = getYears();
 
   function getLastDayOfMonth(year: number, month: number) {
     return new Date(year, month, 0).getDate()

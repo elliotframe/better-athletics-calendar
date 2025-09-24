@@ -111,14 +111,14 @@ function parseDateStringToISO(str: string) {
 
 function makeEventIdSA(name: string, date: string, dochash: string) {
     return crypto
-      .createHash("md5") // or sha256
+      .createHash("md5")
       .update((name ?? "") + (date ?? "") + (dochash ?? ""))
       .digest("hex");
   }
 
 function makeEventIdBMC(name: string, date: string) {
     return crypto
-      .createHash("md5") // or sha256
+      .createHash("md5")
       .update((name ?? "") + (date ?? ""))
       .digest("hex");
   }
