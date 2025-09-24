@@ -115,7 +115,6 @@ function MonthFilterControls({
   sortDir,
   beforeParam,
   afterParam,
-  selectedMonth,
   earliest,
   latest
 }: {
@@ -125,13 +124,11 @@ function MonthFilterControls({
   sortDir: string
   beforeParam: string
   afterParam: string
-  selectedMonth: string
   earliest: string
   latest: string
 }){
 
   
-
   function getMonthsFirst(earliest: string) {
     const months = [
       "01", "02", "03", "04", "05", "06",
@@ -168,10 +165,12 @@ function MonthFilterControls({
     return data;
   }
 
-  const years = getYears();
-
   function getLastDayOfMonth(year: number, month: number) {
     return new Date(year, month, 0).getDate()
+  }
+
+  function getSelectedMonth(beforeParam: string) {
+    return afterParam.substring(5,7)
   }
 
   return (
@@ -180,8 +179,7 @@ function MonthFilterControls({
         <div key={year} className="flex items-center gap-2">
           <span className="w-12 font-bold">{year}</span>
           {months.map((month) => {
-            const monthValue = `${year}-${month}`
-            const isSelected = (selectedMonth === month)
+            const isSelected = (getSelectedMonth(beforeParam) === month)
             return (
               <Link
               key={month}
@@ -265,7 +263,6 @@ export default function EventsTable() {
         sortDir={sortDir}
         beforeParam={beforeParam}
         afterParam={afterParam}
-        selectedMonth={searchParams.get("month") || ""}
         earliest={earliest}
         latest={latest}
       />
