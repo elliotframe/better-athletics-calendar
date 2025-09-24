@@ -115,7 +115,9 @@ function MonthFilterControls({
   sortDir,
   beforeParam,
   afterParam,
-  selectedMonth
+  selectedMonth,
+  earliest,
+  latest
 }: {
   pageIndex: number
   pageCount: number
@@ -124,16 +126,46 @@ function MonthFilterControls({
   beforeParam: string
   afterParam: string
   selectedMonth: string
+  earliest: string
+  latest: string
 }){
 
-  const months = [
-    "01", "02", "03", "04", "05", "06",
-    "07", "08", "09", "10", "11", "12"
-  ]
+  
+
+  function getMonthsFirst(earliest: string) {
+    const months = [
+      "01", "02", "03", "04", "05", "06",
+      "07", "08", "09", "10", "11", "12"
+    ]
+    const years = getYears();
+
+    if (earliest.substring(0,4) > years[0].toString()) return []
+    return months.filter(m => m >= earliest.substring(5,7))
+  }
+
+  function getMonthsLast(latest: string) {
+    const months = [
+      "01", "02", "03", "04", "05", "06",
+      "07", "08", "09", "10", "11", "12"
+    ]
+    const years = getYears();
+
+    if (latest.substring(0,4) < years[1].toString()) return []
+    return months.filter(m => m <= latest.substring(5,7))
+  }
 
   function getYears() {
     const year = new Date().getFullYear();
     return [year, year+1]
+  }
+
+  function getYearsAndMonths(earliest: string, latest: string) {
+    const years = getYears();
+    const data: Record<number, string[]> = {
+      [years[0]]: getMonthsFirst(earliest),
+      [years[1]]: getMonthsLast(latest),
+    };
+    return data;
   }
 
   const years = getYears();
@@ -144,7 +176,7 @@ function MonthFilterControls({
 
   return (
     <div className="flex flex-col gap-2 mb-4">
-      {years.map((year) => (
+      { Object.entries(getYearsAndMonths(earliest, latest)).map(([year, months]) => (
         <div key={year} className="flex items-center gap-2">
           <span className="w-12 font-bold">{year}</span>
           {months.map((month) => {
@@ -185,6 +217,8 @@ export default function EventsTable() {
   const [data, setData] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [earliest, setEarliest] = useState("")
+  const [latest, setLatest] = useState("")
   const pageSize = 10
 
   const table = useReactTable({
@@ -207,10 +241,14 @@ export default function EventsTable() {
         const json = await res.json()
         setData(json.events || [])
         setTotal(json.total || 0)
+        setEarliest(json.earliest)
+        setLatest(json.latest)
       } catch (err) {
         console.error("Error fetching events:", err)
         setData([])
         setTotal(0)
+        setEarliest("")
+        setLatest("")
       } finally {
         setLoading(false)
       }
@@ -227,7 +265,9 @@ export default function EventsTable() {
         sortDir={sortDir}
         beforeParam={beforeParam}
         afterParam={afterParam}
-        selectedMonth={searchParams.get("month") || ""} 
+        selectedMonth={searchParams.get("month") || ""}
+        earliest={earliest}
+        latest={latest}
       />
       <table className="min-w-full border border-gray-200">
         <thead>

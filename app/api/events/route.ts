@@ -31,6 +31,10 @@ export async function GET(req: Request) {
         events = events.filter(e => e.city?.toLowerCase() === city.toLowerCase());
     }
 
+    const dates = events.map(event => event.date);
+    const earliest = dates.reduce((min, d) => d < min ? d : min, dates[0]);
+    const latest = dates.reduce((max, d) => d > max ? d : max, dates[0]);
+
     if (after) {
         const afterDate = new Date(after);
         events = events.filter(e => new Date(e.date) >= afterDate);
@@ -57,5 +61,7 @@ export async function GET(req: Request) {
         pageSize,
         total: events.length,
         events: paginated,
+        earliest,
+        latest,
     });
     }
