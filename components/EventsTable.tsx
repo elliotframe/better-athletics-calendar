@@ -180,10 +180,14 @@ function MonthFilterControls({
           <span className="w-12 font-bold">{year}</span>
           {months.map((month) => {
             const isSelected = (getSelectedMonth(beforeParam) === month)
+            const href = isSelected ? 
+            `/?page=${0}&sort=${sortField}&sortDir=${sortDir}` : 
+            `/?page=${0}&sort=${sortField}&sortDir=${sortDir}&after=${year.toString().concat('-', month, '-', '01')}&before=${year.toString().concat('-', month, '-', getLastDayOfMonth(Number(year), Number(month)).toString().padStart(2, '0'))}`
+            
             return (
               <Link
               key={month}
-              href={`/?page=${0}&sort=${sortField}&sortDir=${sortDir}&after=${year.toString().concat('-', month, '-', '01')}&before=${year.toString().concat('-', month, '-', getLastDayOfMonth(Number(year), Number(month)).toString().padStart(2, '0'))}`}
+              href={href}
               prefetch={true}
               className={`px-2 py-1 border rounded ${isSelected ? "bg-blue-500 text-white" : "bg-white"}`}
               >
