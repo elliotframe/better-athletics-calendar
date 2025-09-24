@@ -33,11 +33,15 @@ function Pagination({
   pageCount,
   sortField,
   sortDir,
+  beforeParam,
+  afterParam
 }: {
   pageIndex: number
   pageCount: number
   sortField: string
   sortDir: string
+  beforeParam: string
+  afterParam: string
 }) {
   const pageWindow = 2
   const pages = []
@@ -64,7 +68,7 @@ function Pagination({
       {/* Prev */}
       {pageIndex > 0 && (
         <Link
-          href={`/?page=${pageIndex - 1}&sort=${sortField}_${sortDir}`}
+          href={`/?page=${pageIndex - 1}&sort=${sortField}&sortDir=${sortDir}&before=${beforeParam}&after=${afterParam}`}
           prefetch={true}
           className="px-3 py-1 border rounded"
         >
@@ -79,7 +83,7 @@ function Pagination({
       {pages.map((p) => (
         <Link
           key={p}
-          href={`/?page=${p}&sort=${sortField}_${sortDir}`}
+          href={`/?page=${p}&sort=${sortField}&sortDir=${sortDir}&before=${beforeParam}&after=${afterParam}`}
           prefetch={true}
           className={`px-3 py-1 border rounded ${p === pageIndex ? "bg-gray-200 font-bold" : ""}`}
         >
@@ -90,7 +94,7 @@ function Pagination({
       {/* Next */}
       {pageIndex < pageCount - 1 && (
         <Link
-          href={`/?page=${pageIndex + 1}&sort=${sortField}_${sortDir}`}
+          href={`/?page=${pageIndex + 1}&sort=${sortField}&sortDir=${sortDir}&before=${beforeParam}&after=${afterParam}`}
           prefetch={true}
           className="px-3 py-1 border rounded"
         >
@@ -105,12 +109,22 @@ function Pagination({
 }
 
 function MonthFilterControls({
+  pageIndex,
+  pageCount,
+  sortField,
+  sortDir,
+  beforeParam,
+  afterParam,
   selectedMonth
 }: {
+  pageIndex: number
+  pageCount: number
+  sortField: string
+  sortDir: string
+  beforeParam: string
+  afterParam: string
   selectedMonth: string
-}) {
-  const router = useRouter()
-  const searchParams = useSearchParams()
+}){
 
   const months = [
     "01", "02", "03", "04", "05", "06",
@@ -119,21 +133,9 @@ function MonthFilterControls({
 
   const years = [2025, 2026] // customize as needed
 
-  const updateParam = (year: string, month: string) => {
-    const params = new URLSearchParams(searchParams.toString())
-    const after = year.concat('-', month, '-', '01')
-    const before = year.concat('-', month, '-', getLastDayOfMonth(Number(year), Number(month)).toString().padStart(2, '0'))
-    selectedMonth = month
-    params.set("before", before)
-    params.set("after", after)
-    params.set("page", "0") // reset page
-    router.push(`/?${params.toString()}`)
-  }
-
   function getLastDayOfMonth(year: number, month: number) {
     return new Date(year, month, 0).getDate()
   }
-
 
   return (
     <div className="flex flex-col gap-2 mb-4">
@@ -144,15 +146,16 @@ function MonthFilterControls({
             const monthValue = `${year}-${month}`
             const isSelected = (selectedMonth === month)
             return (
-              <button
-                key={month}
-                onClick={() => updateParam(year.toString(), month)}
-                className={`px-2 py-1 border rounded ${
-                  isSelected ? "bg-blue-500 text-white" : "bg-white"
-                }`}
+              <Link
+              key={month}
+              href={`/?page=${0}&sort=${sortField}&sortDir=${sortDir}&after=${year.toString().concat('-', month, '-', '01')}&before=${year.toString().concat('-', month, '-', getLastDayOfMonth(Number(year), Number(month)).toString().padStart(2, '0'))}`}
+              prefetch={true}
+              className={`px-2 py-1 border rounded ${isSelected ? "bg-blue-500 text-white" : "bg-white"}`}
               >
-                {month}
-              </button>
+              {month}
+            </Link>
+
+        
             )
           })}
         </div>
@@ -171,6 +174,8 @@ export default function EventsTable() {
   const pageParam = parseInt(searchParams.get("page") || "0", 10)
   const sortParam = searchParams.get("sort") || "date_asc"
   const [sortField, sortDir] = sortParam.split("_")
+  const beforeParam = searchParams.get('before') || ""
+  const afterParam = searchParams.get('after') || ""
 
   const [data, setData] = useState<any[]>([])
   const [total, setTotal] = useState(0)
@@ -192,7 +197,7 @@ export default function EventsTable() {
       setLoading(true)
       try {
         const res = await fetch(
-          `/api/events?page=${pageParam + 1}&pageSize=${pageSize}&sortBy=${sortField}&sortDir=${sortDir}`
+          `/api/events?page=${pageParam + 1}&pageSize=${pageSize}&sortBy=${sortField}&sortDir=${sortDir}&before=${beforeParam}&after=${afterParam}`
         )
         const json = await res.json()
         setData(json.events || [])
@@ -207,11 +212,18 @@ export default function EventsTable() {
     }
 
     fetchData()
-  }, [pageParam, sortField, sortDir])
+  }, [pageParam, sortField, sortDir, beforeParam, afterParam])
 
   return (
     <div>
-      <MonthFilterControls selectedMonth={searchParams.get("month") || ""} />
+      <MonthFilterControls pageIndex={pageParam}
+        pageCount={Math.ceil(total / pageSize)}
+        sortField={sortField}
+        sortDir={sortDir}
+        beforeParam={beforeParam}
+        afterParam={afterParam}
+        selectedMonth={searchParams.get("month") || ""} 
+      />
       <table className="min-w-full border border-gray-200">
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -256,6 +268,8 @@ export default function EventsTable() {
         pageCount={Math.ceil(total / pageSize)}
         sortField={sortField}
         sortDir={sortDir}
+        beforeParam={beforeParam}
+        afterParam={afterParam}
       />
       {loading && <div>Loading events...</div>}
     </div>
