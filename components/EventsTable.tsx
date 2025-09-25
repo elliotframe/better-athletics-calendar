@@ -68,7 +68,7 @@ function Pagination({
       {/* Prev */}
       {pageIndex > 0 && (
         <Link
-          href={`/?page=${pageIndex - 1}&sort=${sortField}&sortDir=${sortDir}&before=${beforeParam}&after=${afterParam}`}
+          href={`/?page=${pageIndex - 1}&sort=${sortField}_${sortDir}&before=${beforeParam}&after=${afterParam}`}
           prefetch={true}
           className="px-3 py-1 border rounded"
         >
@@ -83,7 +83,7 @@ function Pagination({
       {pages.map((p) => (
         <Link
           key={p}
-          href={`/?page=${p}&sort=${sortField}&sortDir=${sortDir}&before=${beforeParam}&after=${afterParam}`}
+          href={`/?page=${p}&sort=${sortField}_${sortDir}&before=${beforeParam}&after=${afterParam}`}
           prefetch={true}
           className={`px-3 py-1 border rounded ${p === pageIndex ? "bg-gray-200 font-bold" : ""}`}
         >
@@ -94,7 +94,7 @@ function Pagination({
       {/* Next */}
       {pageIndex < pageCount - 1 && (
         <Link
-          href={`/?page=${pageIndex + 1}&sort=${sortField}&sortDir=${sortDir}&before=${beforeParam}&after=${afterParam}`}
+          href={`/?page=${pageIndex + 1}&sort=${sortField}_${sortDir}&before=${beforeParam}&after=${afterParam}`}
           prefetch={true}
           className="px-3 py-1 border rounded"
         >
@@ -181,9 +181,9 @@ function MonthFilterControls({
           {months.map((month) => {
             const isSelected = (getSelectedMonth(beforeParam) === month)
             const href = isSelected ? 
-            `/?page=${0}&sort=${sortField}&sortDir=${sortDir}` : 
-            `/?page=${0}&sort=${sortField}&sortDir=${sortDir}&after=${year.toString().concat('-', month, '-', '01')}&before=${year.toString().concat('-', month, '-', getLastDayOfMonth(Number(year), Number(month)).toString().padStart(2, '0'))}`
-            
+            `/?page=${0}&sort=${sortField}_${sortDir}` : 
+            `/?page=${0}&sort=${sortField}_${sortDir}&after=${year.toString().concat('-', month, '-', '01')}&before=${year.toString().concat('-', month, '-', getLastDayOfMonth(Number(year), Number(month)).toString().padStart(2, '0'))}`
+
             return (
               <Link
               key={month}
@@ -238,7 +238,7 @@ export default function EventsTable() {
       setLoading(true)
       try {
         const res = await fetch(
-          `/api/events?page=${pageParam + 1}&pageSize=${pageSize}&sortBy=${sortField}&sortDir=${sortDir}&before=${beforeParam}&after=${afterParam}`
+          `/api/events?page=${pageParam + 1}&pageSize=${pageSize}&sort=${sortField}_${sortDir}&before=${beforeParam}&after=${afterParam}`
         )
         const json = await res.json()
         setData(json.events || [])
@@ -289,7 +289,7 @@ export default function EventsTable() {
                 {row.getVisibleCells().map((cell) => (
                   <td key={cell.id} className="p-2 border-b border-gray-200">
                     {cell.column.id === "name" ? (
-                      <Link href={row.original.url} className="text-blue-500 hover:underline">
+                      <Link href={row.original.url ? row.original.url : `/event/${row.original.eventId}`} className="text-blue-500 hover:underline">
                         {String(cell.getValue())}
                       </Link>
                     ) : (

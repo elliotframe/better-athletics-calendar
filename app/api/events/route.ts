@@ -6,8 +6,8 @@ export async function GET(req: Request) {
     const page = parseInt(searchParams.get("page") || "1", 10);
     const pageSize = parseInt(searchParams.get("pageSize") || "10", 10);
 
-    const sortBy = "date";
-    const sortDir = searchParams.get("sortDir") || "asc";
+    const sortParam = searchParams.get('sort') || "date_asc";
+    const [sortBy, sortDir] = sortParam.split("_")
 
     const type = searchParams.get("type");
     const city = searchParams.get("city");
