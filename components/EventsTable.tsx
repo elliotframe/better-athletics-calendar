@@ -363,15 +363,18 @@ export default function EventsTable() {
         beforeParam={beforeParam}
         afterParam={afterParam}
       />
-      <Pagination
-        pageIndex={pageParam}
-        pageCount={Math.ceil(total / pageSize)}
-        sortField={sortField}
-        sortDir={sortDir}
-        beforeParam={beforeParam}
-        afterParam={afterParam}
-        typeParam={typeParam}
-      />
+      <div className="block sm:hidden">
+        <Pagination
+          pageIndex={pageParam}
+          pageCount={Math.ceil(total / pageSize)}
+          sortField={sortField}
+          sortDir={sortDir}
+          beforeParam={beforeParam}
+          afterParam={afterParam}
+          typeParam={typeParam}
+        />
+      </div>
+      
       <div className="overflow-x-auto rounded-lg border border-gray-700">
         <table className="min-w-full table-fixed border-collapse text-sm text-gray-200">
           <colgroup>
@@ -431,6 +434,17 @@ export default function EventsTable() {
             })}
           </tbody>
         </table>
+      </div>
+      <div className="hidden sm:block">
+        <Pagination
+          pageIndex={pageParam}
+          pageCount={Math.ceil(total / pageSize)}
+          sortField={sortField}
+          sortDir={sortDir}
+          beforeParam={beforeParam}
+          afterParam={afterParam}
+          typeParam={typeParam}
+        />
       </div>
       {loading && <div>Loading events...</div>}
     </div>
