@@ -3,7 +3,7 @@ import { db } from "@/lib/firestore";
 import crypto from "crypto";
 import fetch from "node-fetch";
 import cheerio from "cheerio";
-import { getBMCFixtures, scrapeBMCEvent } from "@/lib/getBMC";
+import { getDateFromURL, getBMCFixtures, scrapeBMCEvent } from "@/lib/getBMC";
 
 
 const getHeaders = () => ({
@@ -95,7 +95,6 @@ function isWithinDateRange(date: string){
     const today = new Date();
     const msWeek = 1000 * 60 * 60 * 24 * 7;
     const diff = today.getTime() - dateO.getTime();
-
     return diff <= msWeek;
 }
 
@@ -130,9 +129,6 @@ export async function GET(req: Request) {
     if (apiKey !== process.env.UPDATE_API_KEY) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const url = new URL(req.url);
-    const baseUrl = `${url.protocol}//${url.host}`;
 
     const headers = getHeaders();
     const address = getAddress();
@@ -175,7 +171,6 @@ export async function GET(req: Request) {
             date: parseDateStringToISO(detail.Starts?.Date),
             location: detail.EventLocation ?? "",
             type: detail.EventCategory ?? "",
-            url: `${baseUrl}/events/${eventId}`,
             eventId: eventId,
             });
 
@@ -201,9 +196,10 @@ export async function GET(req: Request) {
 
     for (const url of links){
         try {
+            const date = getDateFromURL(url);
+            if (!isWithinDateRange(date)) continue;
             const event = await scrapeBMCEvent(url);
-
-            if (!isWithinDateRange(parseDateStringToISO(event.date))) continue;
+            
        
             const eventId = makeEventIdBMC(event.name, event.date)
 

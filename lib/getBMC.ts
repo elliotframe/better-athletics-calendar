@@ -3,11 +3,11 @@ import * as cheerio from "cheerio";
 
 
 interface MeetingData {
-  name: string;
-  location: string;
-  type: string;
-  date: string;
-  url: string;
+    name: string;
+    location: string;
+    type: string;
+    date: string;
+    url: string;
 }
 
 function isNumber(value?: string | number): boolean
@@ -17,58 +17,66 @@ function isNumber(value?: string | number): boolean
            !isNaN(Number(value.toString())));
 }
 
+export function getDateFromURL(url: string) {
+    const urlSplit = url.split("-");
+    if (urlSplit.length < 3) {
+        throw new Error(`Unexpected URL format: ${url}`);
+    }
+    if (!isNumber(urlSplit[urlSplit.length - 1].slice(0, -1)) || !isNumber(urlSplit[urlSplit.length - 3])) {
+        throw new Error(`Unexpected URL format: ${url}`);
+    }
+    const dateStr = `${urlSplit[urlSplit.length - 3]} ${urlSplit[urlSplit.length - 2].slice(0, 3)} ${urlSplit[urlSplit.length - 1].slice(0, -1)}`;
+    const date = new Date(dateStr).toISOString().split("T")[0];
+    return date;
+}
+
+function getTitleFromURL(url: string) {
+    const urlSplit = url.split("-");
+    const locationSplit = urlSplit.slice(0, -3);
+    let title = locationSplit[0].split("/").pop() || "";
+    for (const part of locationSplit.slice(1)) {
+        title += ` ${part}`;
+    }
+    title = title.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    return title;
+}
+
 export async function scrapeBMCEvent(url: string): Promise<MeetingData> {
-  const response = await fetch(url);
-  const html = await response.text();
-  const $ = cheerio.load(html);
+    const response = await fetch(url);
+    const html = await response.text();
+    const $ = cheerio.load(html);
 
-  const urlSplit = url.split("-");
-  if (urlSplit.length < 3) {
-    throw new Error(`Unexpected URL format: ${url}`);
-  }
-  if (!isNumber(urlSplit[urlSplit.length - 1].slice(0, -1)) || !isNumber(urlSplit[urlSplit.length - 3])) {
-    throw new Error(`Unexpected URL format: ${url}`);
-  }
-  const dateStr = `${urlSplit[urlSplit.length - 3]} ${urlSplit[urlSplit.length - 2].slice(0, 3)} ${urlSplit[urlSplit.length - 1].slice(0, -1)}`;
-  const date = new Date(dateStr).toISOString().split("T")[0];
+    const urlSplit = url.split("-");
+    const date = getDateFromURL(url);
+    const title = getTitleFromURL(url);
 
-  const locationSplit = urlSplit.slice(0, -3);
-  let title = locationSplit[0].split("/").pop() || "";
-  for (const part of locationSplit.slice(1)) {
-    title += ` ${part}`;
-  }
-  title = title.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    // Quick links
+    const quickLinksHeader = $("h2").filter((_, el) => $(el).text().includes("QUICK LINKS")).first();
+    let venueLink: string | undefined = undefined;
 
-  // Description
-  const paragraphs = $("p").map((_, el) => $(el).text()).get();
+    if (quickLinksHeader.length) {
+        const headerContainer = quickLinksHeader.parent()?.parent();
+        const linksContainer = headerContainer?.next();
+        venueLink = linksContainer?.find("a").filter((_, a) => $(a).text().toLowerCase() === "venue").attr("href");
+    }
 
-  // Quick links
-  const quickLinksHeader = $("h2").filter((_, el) => $(el).text().includes("QUICK LINKS")).first();
-  let venueLink: string | undefined = undefined;
+    // Venue
+    let venue = "";
+    if (venueLink) {
+        const response2 = await fetch(venueLink);
+        const html2 = await response2.text();
+        const $2 = cheerio.load(html2);
+        const title2 = $2("title").text();
+        venue = title2.split(" - ")[0];
+    }
 
-  if (quickLinksHeader.length) {
-    const headerContainer = quickLinksHeader.parent()?.parent();
-    const linksContainer = headerContainer?.next();
-    venueLink = linksContainer?.find("a").filter((_, a) => $(a).text().toLowerCase() === "venue").attr("href");
-  }
-
-  // Venue
-  let venue = "";
-  if (venueLink) {
-    const response2 = await fetch(venueLink);
-    const html2 = await response2.text();
-    const $2 = cheerio.load(html2);
-    const title2 = $2("title").text();
-    venue = title2.split(" - ")[0];
-  }
-
-  return {
-    name: title,
-    location: venue,
-    type: "Track & Field",
-    date: date,
-    url: url,
-  };
+    return {
+        name: title,
+        location: venue,
+        type: "Track & Field",
+        date: date,
+        url: url,
+    };
 }
 
 export async function getBMCFixtures(): Promise<string[]> {
