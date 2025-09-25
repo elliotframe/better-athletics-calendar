@@ -10,6 +10,7 @@ export async function GET(req: Request) {
     const [sortBy, sortDir] = sortParam.split("_")
 
     const type = searchParams.get("type");
+    console.log(type)
     const city = searchParams.get("city");
     const after = searchParams.get("after");
     const before = searchParams.get("before");
@@ -21,15 +22,7 @@ export async function GET(req: Request) {
     }
 
     let events = snapshot.docs.map(doc => doc.data());
-
-
-    if (type) {
-        events = events.filter(e => e.type?.toLowerCase() === type.toLowerCase());
-    }
-
-    if (city) {
-        events = events.filter(e => e.city?.toLowerCase() === city.toLowerCase());
-    }
+    const types = Array.from(new Set(events.map(event => event.type))).sort()
 
     const dates = events.map(event => event.date);
     const earliest = dates.reduce((min, d) => d < min ? d : min, dates[0]);
@@ -43,6 +36,10 @@ export async function GET(req: Request) {
     if (before) {
         const beforeDate = new Date(before);
         events = events.filter(e => new Date(e.date) <= beforeDate);
+    }
+    
+    if (type) {
+        events = events.filter(e => e.type?.toLowerCase() === type.toLowerCase());
     }
 
     events.sort((a, b) => {
@@ -63,5 +60,6 @@ export async function GET(req: Request) {
         events: paginated,
         earliest,
         latest,
+        types,
     });
     }

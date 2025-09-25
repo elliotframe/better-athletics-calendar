@@ -34,7 +34,8 @@ function Pagination({
   sortField,
   sortDir,
   beforeParam,
-  afterParam
+  afterParam,
+  typeParam,
 }: {
   pageIndex: number
   pageCount: number
@@ -42,6 +43,7 @@ function Pagination({
   sortDir: string
   beforeParam: string
   afterParam: string
+  typeParam: string
 }) {
   const pageWindow = 2
   const pages = []
@@ -64,45 +66,51 @@ function Pagination({
   }
 
   return (
-    <div className="flex items-center gap-2 mt-4">
+    <div className="flex items-center gap-2 mt-6 mb-4 justify-center">
       {/* Prev */}
-      {pageIndex > 0 && (
+      {pageIndex > 0 ? (
         <Link
-          href={`/?page=${pageIndex - 1}&sort=${sortField}_${sortDir}&before=${beforeParam}&after=${afterParam}`}
+          href={`/?page=${pageIndex - 1}&sort=${sortField}_${sortDir}&before=${beforeParam}&after=${afterParam}&type=${typeParam}`}
           prefetch={true}
-          className="px-3 py-1 border rounded"
+          className="px-3 py-1.5 rounded-md border border-gray-700 bg-gray-800 text-gray-200 hover:bg-gray-700 transition-colors"
         >
           Prev
         </Link>
-      )}
-      {pageIndex <= 0 && (
-        <div className="px-3 py-1 border rounded text-gray-600">Prev</div>
+      ) : (
+        <div className="px-3 py-1.5 rounded-md border border-gray-700 bg-gray-900 text-gray-600">
+          Prev
+        </div>
       )}
 
       {/* Page numbers */}
       {pages.map((p) => (
         <Link
           key={p}
-          href={`/?page=${p}&sort=${sortField}_${sortDir}&before=${beforeParam}&after=${afterParam}`}
+          href={`/?page=${p}&sort=${sortField}_${sortDir}&before=${beforeParam}&after=${afterParam}&type=${typeParam}`}
           prefetch={true}
-          className={`px-3 py-1 border rounded ${p === pageIndex ? "bg-gray-200 font-bold" : ""}`}
+          className={`px-3 py-1.5 rounded-md border transition-colors ${
+            p === pageIndex
+              ? "bg-blue-500 border-blue-500 text-white font-semibold"
+              : "bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700"
+          }`}
         >
           {p + 1}
         </Link>
       ))}
 
       {/* Next */}
-      {pageIndex < pageCount - 1 && (
+      {pageIndex < pageCount - 1 ? (
         <Link
-          href={`/?page=${pageIndex + 1}&sort=${sortField}_${sortDir}&before=${beforeParam}&after=${afterParam}`}
+          href={`/?page=${pageIndex + 1}&sort=${sortField}_${sortDir}&before=${beforeParam}&after=${afterParam}&type=${typeParam}`}
           prefetch={true}
-          className="px-3 py-1 border rounded"
+          className="px-3 py-1.5 rounded-md border border-gray-700 bg-gray-800 text-gray-200 hover:bg-gray-700 transition-colors"
         >
           Next
         </Link>
-      )}
-      {pageIndex >= pageCount - 1 && (
-        <div className="px-3 py-1 border rounded text-gray-600">Next</div>
+      ) : (
+        <div className="px-3 py-1.5 rounded-md border border-gray-700 bg-gray-900 text-gray-600">
+          Next
+        </div>
       )}
     </div>
   )
@@ -115,8 +123,9 @@ function MonthFilterControls({
   sortDir,
   beforeParam,
   afterParam,
+  typeParam,
   earliest,
-  latest
+  latest,
 }: {
   pageIndex: number
   pageCount: number
@@ -124,10 +133,12 @@ function MonthFilterControls({
   sortDir: string
   beforeParam: string
   afterParam: string
+  typeParam: string
   earliest: string
   latest: string
 }){
 
+  const [isOpen, setIsOpen] = useState(false)
   
   function getMonthsFirst(earliest: string) {
     const months = [
@@ -174,35 +185,103 @@ function MonthFilterControls({
   }
 
   return (
-    <div className="flex flex-col gap-2 mb-4">
-      { Object.entries(getYearsAndMonths(earliest, latest)).map(([year, months]) => (
-        <div key={year} className="flex items-center gap-2">
-          <span className="w-12 font-bold">{year}</span>
-          {months.map((month) => {
-            const isSelected = (getSelectedMonth(beforeParam) === month)
-            const href = isSelected ? 
-            `/?page=${0}&sort=${sortField}_${sortDir}` : 
-            `/?page=${0}&sort=${sortField}_${sortDir}&after=${year.toString().concat('-', month, '-', '01')}&before=${year.toString().concat('-', month, '-', getLastDayOfMonth(Number(year), Number(month)).toString().padStart(2, '0'))}`
+    <div className="border border-gray-700 rounded-md overflow-hidden mb-4">
+      {/* Collapsible header */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex justify-between items-center px-4 py-2 bg-gray-900 text-white font-semibold hover:bg-gray-800 transition-colors"
+      >
+        <span>Filter by Month</span>
+        <span className="transform transition-transform duration-200">
+          {isOpen ? "▲" : "▼"}
+        </span>
+      </button>
 
-            return (
-              <Link
-              key={month}
-              href={href}
-              prefetch={true}
-              className={`px-2 py-1 border rounded ${isSelected ? "bg-blue-500 text-white" : "bg-white"}`}
-              >
-              {month}
-            </Link>
+      {/* Collapsible body */}
+      {isOpen && (
+        <div className="px-4 py-3 bg-gray-800 text-white flex flex-col sm:flex-row sm:justify-start sm:gap-12">
+          {Object.entries(getYearsAndMonths(earliest, latest)).map(([year, months]) => (
+            <div key={year} className="flex flex-col mb-4 sm:mb-0">
+              <span className="font-bold text-gray-300 mb-2">{year}</span>
+              <div className="flex flex-wrap gap-2">
+                {months.map((month) => {
+                  const isSelected = getSelectedMonth(beforeParam) === month
+                  const href = isSelected
+                    ? `/?page=0&sort=${sortField}_${sortDir}`
+                    : `/?page=0&sort=${sortField}_${sortDir}&after=${year}-${month}-01&before=${year}-${month}-${getLastDayOfMonth(Number(year), Number(month)).toString().padStart(2, '0')}&type=${typeParam}`
 
-        
-            )
-          })}
+                  return (
+                    <Link
+                      key={month}
+                      href={href}
+                      prefetch={true}
+                      className={`px-3 py-1.5 rounded-md border text-sm transition-colors duration-200
+                        ${isSelected
+                          ? "bg-blue-500 border-blue-500 text-white"
+                          : "bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700"
+                        }`}
+                    >
+                      {month}
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
+      )}
     </div>
   )
 }
 
+function TypeFilterControls({
+  types,
+  pageIndex,
+  sortField,
+  sortDir,
+  beforeParam,
+  afterParam
+}: {
+  types: string[]
+  pageIndex: number
+  sortField: string
+  sortDir: string
+  beforeParam: string
+  afterParam: string
+}) {
+  const searchParams = useSearchParams()
+  const currentType = searchParams.get("type") || ""
+
+  return (
+    <div className="border border-gray-700 rounded-md overflow-hidden mb-4 bg-gray-800 text-white px-4 py-2 flex items-center gap-2">
+      <label htmlFor="type-filter" className="font-semibold">Filter by Type:</label>
+      <select
+        id="type-filter"
+        className="bg-gray-700 border border-gray-600 text-white rounded px-2 py-1 text-sm"
+        value={currentType}
+        onChange={(e) => {
+          const selectedType = e.target.value
+          const params = new URLSearchParams(searchParams.toString())
+          if (selectedType) {
+            params.set("type", selectedType)
+          } else {
+            params.delete("type")
+          }
+          params.set("page", "0") // reset page
+          params.set("sort", `${sortField}_${sortDir}`)
+          if (beforeParam) params.set("before", beforeParam)
+          if (afterParam) params.set("after", afterParam)
+          window.location.href = `/?${params.toString()}`
+        }}
+      >
+        <option value="">All</option>
+        {types.map((type) => (
+          <option key={type} value={type}>{type}</option>
+        ))}
+      </select>
+    </div>
+  )
+}
 
 
 
@@ -215,13 +294,17 @@ export default function EventsTable() {
   const [sortField, sortDir] = sortParam.split("_")
   const beforeParam = searchParams.get('before') || ""
   const afterParam = searchParams.get('after') || ""
+  const typeParam = searchParams.get('type') || ""
 
   const [data, setData] = useState<any[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [earliest, setEarliest] = useState("")
   const [latest, setLatest] = useState("")
+  const [types, setTypes] = useState<any[]>([])
   const pageSize = 10
+  
+
 
   const table = useReactTable({
     data,
@@ -238,13 +321,14 @@ export default function EventsTable() {
       setLoading(true)
       try {
         const res = await fetch(
-          `/api/events?page=${pageParam + 1}&pageSize=${pageSize}&sort=${sortField}_${sortDir}&before=${beforeParam}&after=${afterParam}`
+          `/api/events?page=${pageParam + 1}&pageSize=${pageSize}&sort=${sortField}_${sortDir}&before=${beforeParam}&after=${afterParam}&type=${typeParam}`
         )
         const json = await res.json()
         setData(json.events || [])
         setTotal(json.total || 0)
         setEarliest(json.earliest)
         setLatest(json.latest)
+        setTypes(json.types)
       } catch (err) {
         console.error("Error fetching events:", err)
         setData([])
@@ -267,48 +351,18 @@ export default function EventsTable() {
         sortDir={sortDir}
         beforeParam={beforeParam}
         afterParam={afterParam}
+        typeParam={typeParam}
         earliest={earliest}
         latest={latest}
       />
-      <table className="min-w-full border border-gray-200">
-        <thead>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <th key={header.id} className="p-2 border-b border-gray-200">
-                  {flexRender(header.column.columnDef.header, header.getContext())}
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {data.length > 0 ? (
-            table.getRowModel().rows.map((row) => (
-              <tr key={row.id} className="hover:bg-gray-50">
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="p-2 border-b border-gray-200">
-                    {cell.column.id === "name" ? (
-                      <Link href={row.original.url ? row.original.url : `/event/${row.original.eventId}`} className="text-blue-500 hover:underline">
-                        {String(cell.getValue())}
-                      </Link>
-                    ) : (
-                      flexRender(cell.column.columnDef.cell, cell.getContext())
-                    )}
-                  </td>
-                ))}
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan={columns.length} className="text-center p-4">
-                No events found
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-
+      <TypeFilterControls
+        types={types}
+        pageIndex={pageParam}
+        sortField={sortField}
+        sortDir={sortDir}
+        beforeParam={beforeParam}
+        afterParam={afterParam}
+      />
       <Pagination
         pageIndex={pageParam}
         pageCount={Math.ceil(total / pageSize)}
@@ -316,7 +370,68 @@ export default function EventsTable() {
         sortDir={sortDir}
         beforeParam={beforeParam}
         afterParam={afterParam}
+        typeParam={typeParam}
       />
+      <div className="overflow-x-auto rounded-lg border border-gray-700">
+        <table className="min-w-full table-fixed border-collapse text-sm text-gray-200">
+          <colgroup>
+            <col className="w-1/3 sm:w-2/5" />
+            <col className="w-1/3 sm:w-1/5" />
+            <col className="w-1/3 sm:w-1/5" />
+            <col className="w-1/3 sm:w-1/5" />
+          </colgroup>
+
+          <thead className="bg-gray-900 text-gray-300">
+            {table.getHeaderGroups().map(headerGroup => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header, idx) => (
+                  <th
+                    key={header.id}
+                    className={`px-4 py-2 border-b border-gray-700 text-left font-semibold uppercase tracking-wider text-xs min-w-[80px]
+                      ${idx === 3 ? "hidden sm:table-cell" : ""}`}
+                  >
+                    {flexRender(header.column.columnDef.header, header.getContext())}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+
+          <tbody>
+            {Array.from({ length: pageSize }).map((_, rowIndex) => {
+              const row = table.getRowModel().rows[rowIndex]
+              return (
+                <tr key={rowIndex} className={row ? "hover:bg-gray-800 transition-colors duration-200" : ""}>
+                  {Array.from({ length: columns.length }).map((_, cellIndex) => {
+                    if (row) {
+                      const cell = row.getVisibleCells()[cellIndex]
+                      return (
+                        <td
+                          key={cell.id}
+                          className={`px-4 py-2 border-b border-gray-700 ${cellIndex === 3 ? "hidden sm:table-cell" : ""}`}
+                        >
+                          {cell.column.id === "name" ? (
+                            <Link
+                              href={row.original.url ? row.original.url : `/event/${row.original.eventId}`}
+                              className="text-blue-400 hover:text-blue-300 hover:underline transition-colors duration-150"
+                            >
+                              {String(cell.getValue())}
+                            </Link>
+                          ) : (
+                            flexRender(cell.column.columnDef.cell, cell.getContext())
+                          )}
+                        </td>
+                      )
+                    } else {
+                      return <td key={cellIndex} className={`px-4 py-2 border-b border-gray-700 ${cellIndex === 3 ? "hidden sm:table-cell" : ""}`}>&nbsp;</td>
+                    }
+                  })}
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
       {loading && <div>Loading events...</div>}
     </div>
   )
