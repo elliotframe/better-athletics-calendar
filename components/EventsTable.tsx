@@ -1,53 +1,21 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { useReactTable, getCoreRowModel, getSortedRowModel, flexRender } from "@tanstack/react-table"
+import { useReactTable, getCoreRowModel, getSortedRowModel, getPaginationRowModel, ColumnDef, flexRender, SortingState, PaginationState, Table,ColumnFiltersState, getFilteredRowModel } from "@tanstack/react-table"
 import Link from "next/link"
 
-const columns = [
-  { accessorKey: "name", header: "Event Name" },
-  {
-    accessorKey: "date",
-    header: "Date",
-    cell: (info: any) => {
-      const val: string = info.getValue()
-      if (!val) return ""
-      const [year, month, day] = val.split("-")
-      return `${day}/${month}/${year}`
-    },
-    sortingFn: (rowA: any, rowB: any, columnId: any) => {
-      const a = rowA.getValue(columnId)
-      const b = rowB.getValue(columnId)
-      if (!a) return -1
-      if (!b) return 1
-      return a.localeCompare(b)
-    },
-  },
-  { accessorKey: "location", header: "Location" },
-  { accessorKey: "type", header: "Type" },
-]
 
-function Pagination({
-  pageIndex,
-  pageCount,
-  sortField,
-  sortDir,
-  beforeParam,
-  afterParam,
-  typeParam,
-}: {
-  pageIndex: number
-  pageCount: number
-  sortField: string
-  sortDir: string
-  beforeParam: string
-  afterParam: string
-  typeParam: string
-}) {
+
+
+
+function Pagination({table}: {table: ExtendedTable<EventEntry>}) {
   const pageWindow = 2
   const pages = []
   const fullWindow = pageWindow*2 + 1
+
+  const pageIndex = table.getState().pagination.pageIndex;
+  const pageCount = table.getPageCount();
 
   let start = Math.max(0, pageIndex - pageWindow)
   let end = Math.min(pageCount - 1, pageIndex + pageWindow)
@@ -67,80 +35,40 @@ function Pagination({
 
   return (
     <div className="flex items-center gap-2 mt-6 mb-4 justify-center">
-      {/* Prev */}
-      {pageIndex > 0 ? (
-        <Link
-          href={`/?page=${pageIndex - 1}&sort=${sortField}_${sortDir}&before=${beforeParam}&after=${afterParam}&type=${typeParam}`}
-          prefetch={true}
-          className="px-3 py-1.5 rounded-md border border-gray-700 bg-gray-800 text-gray-200 hover:bg-gray-700 transition-colors"
-        >
-          Prev
-        </Link>
-      ) : (
-        <div className="px-3 py-1.5 rounded-md border border-gray-700 bg-gray-900 text-gray-600">
-          Prev
-        </div>
-      )}
+      <button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} className="px-3 py-1.5 rounded-md border border-gray-700 bg-gray-800 disabled:opacity-50 text-gray-200 hover:bg-gray-700 transition-colors">
+        Prev
+      </button>
 
-      {/* Page numbers */}
-      {pages.map((p) => (
-        <Link
-          key={p}
-          href={`/?page=${p}&sort=${sortField}_${sortDir}&before=${beforeParam}&after=${afterParam}&type=${typeParam}`}
-          prefetch={true}
-          className={`px-3 py-1.5 rounded-md border transition-colors ${
-            p === pageIndex
-              ? "bg-blue-500 border-blue-500 text-white font-semibold"
-              : "bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700"
-          }`}
-        >
-          {p + 1}
-        </Link>
-      ))}
+      {pages.map((p) => {
+        return(
+          <button key={p} onClick={() => table.setPageIndex(p)} className=
+          {p===pageIndex ? "px-3 py-1.5 rounded-md border border-gray-700 bg-gray-200 text-gray-800 hover:bg-gray-100 transition-colors"
+                          : "px-3 py-1.5 rounded-md border border-gray-700 bg-gray-800 text-gray-200 hover:bg-gray-700 transition-colors"}>
+            {p + 1}
+          </button>
+        )
+      })}
 
-      {/* Next */}
-      {pageIndex < pageCount - 1 ? (
-        <Link
-          href={`/?page=${pageIndex + 1}&sort=${sortField}_${sortDir}&before=${beforeParam}&after=${afterParam}&type=${typeParam}`}
-          prefetch={true}
-          className="px-3 py-1.5 rounded-md border border-gray-700 bg-gray-800 text-gray-200 hover:bg-gray-700 transition-colors"
-        >
-          Next
-        </Link>
-      ) : (
-        <div className="px-3 py-1.5 rounded-md border border-gray-700 bg-gray-900 text-gray-600">
-          Next
-        </div>
-      )}
+      <button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} className="px-3 py-1.5 rounded-md border border-gray-700 bg-gray-800 disabled:opacity-50 text-gray-200 hover:bg-gray-700 transition-colors">
+        Next
+      </button>
+    
     </div>
   )
 }
 
-function MonthFilterControls({
-  pageIndex,
-  pageCount,
-  sortField,
-  sortDir,
-  beforeParam,
-  afterParam,
-  typeParam,
-  earliest,
-  latest,
-}: {
-  pageIndex: number
-  pageCount: number
-  sortField: string
-  sortDir: string
-  beforeParam: string
-  afterParam: string
-  typeParam: string
-  earliest: string
-  latest: string
-}){
+function MonthFilterControls({ table }: { table: ExtendedTable<EventEntry> }){
 
-  const [isOpen, setIsOpen] = useState(false)
-  
-  function getMonthsFirst(earliest: string) {
+  const [isOpen, setIsOpen] = useState(!(table.month === ''))
+  const pageIndex = table.getState().pagination.pageIndex;
+  const pageCount = table.getPageCount();
+  const earliest = table.getEarliest();
+  const latest = table.getLatest();
+
+  function getMonthsFirst(earliest: string | null) {
+    if (!earliest) {
+      return []
+    }
     const months = [
       "01", "02", "03", "04", "05", "06",
       "07", "08", "09", "10", "11", "12"
@@ -151,7 +79,10 @@ function MonthFilterControls({
     return months.filter(m => m >= earliest.substring(5,7))
   }
 
-  function getMonthsLast(latest: string) {
+  function getMonthsLast(latest: string | null) {
+    if (!latest) {
+      return []
+    }
     const months = [
       "01", "02", "03", "04", "05", "06",
       "07", "08", "09", "10", "11", "12"
@@ -162,12 +93,22 @@ function MonthFilterControls({
     return months.filter(m => m <= latest.substring(5,7))
   }
 
+  function filterByMonth(table: ExtendedTable<EventEntry>, year: string, month: string) {
+    table.setMonth(`${year}-${month}`)
+    table.setPageIndex(0)
+  }
+
+  function resetMonth(table: ExtendedTable<EventEntry>) {
+    table.setMonth('')
+    table.setPageIndex(0)
+  }
+
   function getYears() {
     const year = new Date().getFullYear();
     return [year, year+1]
   }
 
-  function getYearsAndMonths(earliest: string, latest: string) {
+  function getYearsAndMonths(earliest: string | null, latest: string | null) {
     const years = getYears();
     const data: Record<number, string[]> = {
       [years[0]]: getMonthsFirst(earliest),
@@ -176,17 +117,8 @@ function MonthFilterControls({
     return data;
   }
 
-  function getLastDayOfMonth(year: number, month: number) {
-    return new Date(year, month, 0).getDate()
-  }
-
-  function getSelectedMonth(beforeParam: string) {
-    return afterParam.substring(5,7)
-  }
-
   return (
     <div className="border border-gray-700 rounded-md overflow-hidden mb-4">
-      {/* Collapsible header */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex justify-between items-center px-4 py-2 bg-gray-900 text-white font-semibold hover:bg-gray-800 transition-colors"
@@ -197,7 +129,6 @@ function MonthFilterControls({
         </span>
       </button>
 
-      {/* Collapsible body */}
       {isOpen && (
         <div className="px-4 py-3 bg-gray-800 text-white flex flex-col sm:flex-row sm:justify-start sm:gap-12">
           {Object.entries(getYearsAndMonths(earliest, latest)).map(([year, months]) => (
@@ -205,24 +136,16 @@ function MonthFilterControls({
               <span className="font-bold text-gray-300 mb-2">{year}</span>
               <div className="flex flex-wrap gap-2">
                 {months.map((month) => {
-                  const isSelected = getSelectedMonth(beforeParam) === month
-                  const href = isSelected
-                    ? `/?page=0&sort=${sortField}_${sortDir}`
-                    : `/?page=0&sort=${sortField}_${sortDir}&after=${year}-${month}-01&before=${year}-${month}-${getLastDayOfMonth(Number(year), Number(month)).toString().padStart(2, '0')}&type=${typeParam}`
+                  const isSelected = table.month === `${year}-${month}`
 
                   return (
-                    <Link
-                      key={month}
-                      href={href}
-                      prefetch={true}
-                      className={`px-3 py-1.5 rounded-md border text-sm transition-colors duration-200
-                        ${isSelected
-                          ? "bg-blue-500 border-blue-500 text-white"
-                          : "bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700"
-                        }`}
-                    >
-                      {month}
-                    </Link>
+                    <button key={month} className={`px-3 py-1.5 rounded-md border text-sm transition-colors duration-200
+                      ${isSelected
+                        ? "bg-blue-500 border-blue-500 text-white"
+                      : "bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700" }`}
+                      onClick={isSelected ? () => resetMonth(table) : () => filterByMonth(table, year, month)}>
+                        {month}
+                    </button>
                   )
                 })}
               </div>
@@ -234,23 +157,10 @@ function MonthFilterControls({
   )
 }
 
-function TypeFilterControls({
-  types,
-  pageIndex,
-  sortField,
-  sortDir,
-  beforeParam,
-  afterParam
-}: {
-  types: string[]
-  pageIndex: number
-  sortField: string
-  sortDir: string
-  beforeParam: string
-  afterParam: string
-}) {
+function TypeFilterControls({ table }: { table: ExtendedTable<EventEntry> }) {
   const searchParams = useSearchParams()
   const currentType = searchParams.get("type") || ""
+  const types = Array.from( new Set(table.getOriginalData().map(e => e.type)))
 
   return (
     <div className="border border-gray-700 rounded-md overflow-hidden mb-4 bg-gray-800 text-white px-4 py-2 flex items-center gap-2">
@@ -259,20 +169,7 @@ function TypeFilterControls({
         id="type-filter"
         className="bg-gray-700 border border-gray-600 text-white rounded px-2 py-1 text-sm"
         value={currentType}
-        onChange={(e) => {
-          const selectedType = e.target.value
-          const params = new URLSearchParams(searchParams.toString())
-          if (selectedType) {
-            params.set("type", selectedType)
-          } else {
-            params.delete("type")
-          }
-          params.set("page", "0") // reset page
-          params.set("sort", `${sortField}_${sortDir}`)
-          if (beforeParam) params.set("before", beforeParam)
-          if (afterParam) params.set("after", afterParam)
-          window.location.href = `/?${params.toString()}`
-        }}
+        onChange={(e) => table.setType(e.target.value)}
       >
         <option value="">All</option>
         {types.map((type) => (
@@ -283,109 +180,176 @@ function TypeFilterControls({
   )
 }
 
+export interface EventEntry {
+  name: string;
+  date: string;
+  location: string;
+  type: string;
+  eventId: string;
+  url : string;
+}
 
+type ExtendedTable<T> = Table<T> & {
+  getEarliest: () => string | null,
+  getLatest: () => string | null,
+  month: string,
+  setMonth: (newMonth: string) => void,
+  type: string,
+  setType: (newType: string) => void,
+  getOriginalData: () => EventEntry[],
+}
 
-export default function EventsTable() {
+export default function EventsTable({ events }: { events: EventEntry[] }) {
   const searchParams = useSearchParams()
   const router = useRouter()
 
+
   const pageParam = parseInt(searchParams.get("page") || "0", 10)
   const sortParam = searchParams.get("sort") || "date_asc"
+  const typeFilterParam = searchParams.get("type") || ""
+  const monthFilterParam = searchParams.get("month") || "" 
   const [sortField, sortDir] = sortParam.split("_")
   const beforeParam = searchParams.get('before') || ""
   const afterParam = searchParams.get('after') || ""
   const typeParam = searchParams.get('type') || ""
+  const [month, setMonth] = useState(searchParams.get('month') || "")
+  const [type, setType] = useState(searchParams.get('type') || "")
 
-  const [data, setData] = useState<any[]>([])
-  const [total, setTotal] = useState(0)
-  const [loading, setLoading] = useState(false)
-  const [earliest, setEarliest] = useState("")
-  const [latest, setLatest] = useState("")
-  const [types, setTypes] = useState<any[]>([])
-  const pageSize = 10
+  const columns = useMemo<ColumnDef<EventEntry>[]>( () => [
+    { accessorKey: "name", header: "Event Name" },
+    {
+      accessorKey: "date",
+      header: "Date",
+      filterFn: (row, columnId, filterValue) => {
+        if (!filterValue) return true
+        const rowDate = row.getValue<string>(columnId)
+        if (!rowDate) return false
+        return rowDate.startsWith(filterValue)
+      },
+      cell: (info: any) => {
+        const val: string = info.getValue()
+        if (!val) return ""
+        const [year, month, day] = val.split("-")
+        return `${day}/${month}/${year}`
+      },
+    },
+    { accessorKey: "location", header: "Location" },
+    { accessorKey: "type", header: "Type", 
+        filterFn: (row, columnId, filterValue) => {
+        if (!filterValue) return true
+        const rowType = row.getValue<string>(columnId)
+        if (!rowType) return false
+
+        return rowType === filterValue
+      },
+    },
+  ],
+  []
+);
+
   
+const [sorting, setSorting] = useState<SortingState>([
+  { id: sortField, desc: sortDir === "desc" },
+])
+const [pagination, setPagination] = useState<PaginationState>({
+  pageIndex: pageParam,
+  pageSize: 10,
+})
+const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(() => {
+  const filters: ColumnFiltersState = []
+
+  if (type) {
+    filters.push({ id: "type", value: type })
+  }
+
+  if (month) {
+    filters.push({ id: "date", value: month })
+  }
+
+  return filters
+})
 
 
   const table = useReactTable({
-    data,
+    data: events,
     columns,
-    pageCount: Math.ceil(total / pageSize),
-    state: { sorting: [{ id: sortField, desc: sortDir === "desc" }] },
+    state: { sorting, pagination, columnFilters },
+    onColumnFiltersChange: setColumnFilters,
+    onSortingChange: setSorting,
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    manualPagination: true,
+    getPaginationRowModel: getPaginationRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
   })
 
-  useEffect(() => {
-    async function fetchData() {
-      setLoading(true)
-      try {
-        const res = await fetch(
-          `/api/events?page=${pageParam + 1}&pageSize=${pageSize}&sort=${sortField}_${sortDir}&before=${beforeParam}&after=${afterParam}&type=${typeParam}`
-        )
-        const json = await res.json()
-        setData(json.events || [])
-        setTotal(json.total || 0)
-        setEarliest(json.earliest)
-        setLatest(json.latest)
-        setTypes(json.types)
-      } catch (err) {
-        console.error("Error fetching events:", err)
-        setData([])
-        setTotal(0)
-        setEarliest("")
-        setLatest("")
-      } finally {
-        setLoading(false)
-      }
-    }
+  const extendedTable: ExtendedTable<EventEntry> = {
+    ...table,
+    getEarliest: () => {
+      if (events.length === 0) return null;
+      return events.map((e) => e.date).sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0];
+    },
+    getLatest: () => {
+      if (events.length === 0) return null;
+      return events.map((e) => e.date).sort((a,b) => new Date(b).getTime() - new Date(a).getTime())[0];
+    },
+    month,
+    setMonth,
+    type,
+    setType,
+    getOriginalData: () => {return events},
+  }
 
-    fetchData()
-  }, [pageParam, sortField, sortDir, beforeParam, afterParam])
+  useEffect(() => {
+    setColumnFilters((old) => {
+      const otherFilters = old.filter(f => f.id !== "date")
+      if (!month) return otherFilters
+      return [...otherFilters, { id: "date", value: month }]
+    })
+  }, [month])
+
+  useEffect(() => {
+    setColumnFilters((old) => {
+      const otherFilters = old.filter(f => f.id !== "type")
+      if (!type || type === 'All') return otherFilters
+      return [...otherFilters, { id: "type", value: type }]
+    })
+  }, [type])
+
+  useEffect(() => {
+    const newParams = new URLSearchParams(searchParams.toString())
+    newParams.set("page", String(pagination.pageIndex))
+    newParams.set(
+      "sort",
+      `${sorting[0]?.id}_${sorting[0]?.desc ? "desc" : "asc"}`
+    )
+    newParams.set("month", extendedTable.month);
+  
+    newParams.set('type', extendedTable.type);
+  
+    router.replace(`?${newParams.toString()}`)
+  }, [pagination.pageIndex, sorting, columnFilters, extendedTable.month, router, searchParams])
+
 
   return (
     <div>
-      <MonthFilterControls pageIndex={pageParam}
-        pageCount={Math.ceil(total / pageSize)}
-        sortField={sortField}
-        sortDir={sortDir}
-        beforeParam={beforeParam}
-        afterParam={afterParam}
-        typeParam={typeParam}
-        earliest={earliest}
-        latest={latest}
-      />
-      <TypeFilterControls
-        types={types}
-        pageIndex={pageParam}
-        sortField={sortField}
-        sortDir={sortDir}
-        beforeParam={beforeParam}
-        afterParam={afterParam}
-      />
+      <MonthFilterControls table = {extendedTable} />
+      <TypeFilterControls table = {extendedTable} />
       <div className="block sm:hidden">
-        <Pagination
-          pageIndex={pageParam}
-          pageCount={Math.ceil(total / pageSize)}
-          sortField={sortField}
-          sortDir={sortDir}
-          beforeParam={beforeParam}
-          afterParam={afterParam}
-          typeParam={typeParam}
-        />
+        <Pagination table = {extendedTable} />
       </div>
       
       <div className="overflow-x-auto rounded-lg border border-gray-700">
         <table className="min-w-full table-fixed border-collapse text-sm text-gray-200">
           <colgroup>
             <col className="w-1/3 sm:w-2/5" />
-            <col className="w-1/3 sm:w-1/5" />
-            <col className="w-1/3 sm:w-1/5" />
+            <col className="w-1/3 sm:w-1/10" />
+            <col className="w-1/3 sm:w-3/10" />
             <col className="w-1/3 sm:w-1/5" />
           </colgroup>
 
           <thead className="bg-gray-900 text-gray-300">
-            {table.getHeaderGroups().map(headerGroup => (
+            {extendedTable.getHeaderGroups().map(headerGroup => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header, idx) => (
                   <th
@@ -401,22 +365,24 @@ export default function EventsTable() {
           </thead>
 
           <tbody>
-            {Array.from({ length: pageSize }).map((_, rowIndex) => {
-              const row = table.getRowModel().rows[rowIndex]
+            {Array.from({ length: pagination.pageSize }).map((_, rowIndex) => {
+              const row = extendedTable.getRowModel().rows[rowIndex]
+
               return (
-                <tr key={rowIndex} className={row ? "hover:bg-gray-800 transition-colors duration-200" : ""}>
-                  {Array.from({ length: columns.length }).map((_, cellIndex) => {
+                <tr
+                  key={row ? row.id : `empty-${rowIndex}`}
+                  className={row ? "hover:bg-gray-800 transition-colors duration-200" : ""}
+                >
+                  {columns.map((column, cellIndex) => {
                     if (row) {
                       const cell = row.getVisibleCells()[cellIndex]
                       return (
-                        <td
-                          key={cell.id}
-                          className={`px-4 py-2 border-b border-gray-700 ${cellIndex === 3 ? "hidden sm:table-cell" : ""}`}
-                        >
+                        <td key={cell.id} className={`px-4 py-2 border-b border-gray-700`}>
                           {cell.column.id === "name" ? (
                             <Link
-                              href={row.original.url ? row.original.url : `/event/${row.original.eventId}`}
+                              href={row.original.url || `/event/${row.original.eventId}`}
                               className="text-blue-400 hover:text-blue-300 hover:underline transition-colors duration-150"
+                              prefetch={false}
                             >
                               {String(cell.getValue())}
                             </Link>
@@ -426,7 +392,7 @@ export default function EventsTable() {
                         </td>
                       )
                     } else {
-                      return <td key={cellIndex} className={`px-4 py-2 border-b border-gray-700 ${cellIndex === 3 ? "hidden sm:table-cell" : ""}`}>&nbsp;</td>
+                      return <td key={`empty-${cellIndex}`} className="px-4 py-2 border-b border-gray-700">&nbsp;</td>
                     }
                   })}
                 </tr>
@@ -436,17 +402,8 @@ export default function EventsTable() {
         </table>
       </div>
       <div className="hidden sm:block">
-        <Pagination
-          pageIndex={pageParam}
-          pageCount={Math.ceil(total / pageSize)}
-          sortField={sortField}
-          sortDir={sortDir}
-          beforeParam={beforeParam}
-          afterParam={afterParam}
-          typeParam={typeParam}
-        />
+        <Pagination table = {extendedTable}/>
       </div>
-      {loading && <div>Loading events...</div>}
     </div>
   )
 }
