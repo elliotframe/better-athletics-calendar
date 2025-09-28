@@ -25,7 +25,8 @@ export default function Page() {
       }
 
       try {
-        const res = await fetch("/api/events")
+        const baseUrl = typeof window !== "undefined" ? window.location.origin : ""
+        const res = await fetch(`${baseUrl}/api/events`)
         if (!res.ok) throw new Error("Failed to fetch events")
         const data = await res.json()
         const eventsData = data.events as EventEntry[]
