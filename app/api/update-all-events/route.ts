@@ -122,6 +122,10 @@ function makeEventIdBMC(name: string, date: string) {
       .digest("hex");
   }
 
+  function fixStoreLinks(html: string): string {
+    return html.replace(/href="\/store\//g, 'href="https://scottishathletics.justgo.com/store/');
+  }
+
 export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
@@ -150,6 +154,8 @@ export async function GET(req: Request) {
         docHash: e.EventDocIdHash,
         })) || [];
 
+    const processedEventIds: string[] = [];
+
     for (const event of eventsSummary) {
         const detailPayload = getEventPayload(event.docHash);
         const detailRes = await fetch(address, {
@@ -165,6 +171,8 @@ export async function GET(req: Request) {
         if (!isWithinDateRange(parseDateStringToISO(detail.Starts?.Date))) continue;
         
         const eventId = makeEventIdSA(detail.EventName, parseDateStringToISO(detail.Starts?.Date), detail.EventDocIdHash)
+
+        processedEventIds.push(eventId);
 
         await db.collection("cache").doc(eventId).set({
             name: detail.EventName ?? "",
@@ -185,7 +193,7 @@ export async function GET(req: Request) {
                 raw: detail.Address,
                 formatted: formatAddress(detail.Address),
             },
-            detail: detail.EventDetail ?? "",
+            detail: detail.EventDetail ? fixStoreLinks(detail.EventDetail) : "",
             category: detail.EventCategory ?? "",
             directLink: detail.DirectLink ?? "",
             docHash: detail.EventDocIdHash,
@@ -202,6 +210,7 @@ export async function GET(req: Request) {
             
        
             const eventId = makeEventIdBMC(event.name, event.date)
+            processedEventIds.push(eventId);
 
             await db.collection("cache").doc(eventId).set({
                 name: `BMC: ${event.name}`,
@@ -215,6 +224,19 @@ export async function GET(req: Request) {
         catch (e: unknown) {
             console.log(e);
         }
+    }
+
+    for (const collectionName of ["events", "cache"]) {
+        const snapshot = await db.collection(collectionName).get();
+        const batch = db.batch();
+      
+        snapshot.forEach((doc) => {
+          if (!processedEventIds.includes(doc.id)) {
+            batch.delete(doc.ref);
+          }
+        });
+      
+        await batch.commit();
     }
 
 
