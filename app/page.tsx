@@ -13,24 +13,29 @@ export default function Page() {
 
   useEffect(() => {
     async function loadEvents() {
-      try {
-        const origin = typeof window !== "undefined" ? window.location.origin : ""
-        const cached = localStorage.getItem(CACHE_KEY)
-        const cachedTimestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY)
-        const now = Date.now()
-
-        if (cached && cachedTimestamp && now - parseInt(cachedTimestamp) < CACHE_DURATION) {
-          setEvents(JSON.parse(cached))
+      const now = Date.now()
+      const cached = localStorage.getItem(CACHE_KEY)
+      const cachedTimestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY)
+  
+      if (cached && cachedTimestamp && now - parseInt(cachedTimestamp) < CACHE_DURATION) {
+        try {
+          const parsed = JSON.parse(cached)
+          setEvents(Array.isArray(parsed) ? parsed : [])
           setLoading(false)
           return
+        } catch {
+          localStorage.removeItem(CACHE_KEY)
+          localStorage.removeItem(CACHE_TIMESTAMP_KEY)
         }
-
-        console.log(origin)
+      }
+  
+      try {
+        const origin = typeof window !== "undefined" ? window.location.origin : ""
         const res = await fetch(`${origin}/api/events`)
         if (!res.ok) throw new Error("Failed to fetch events")
         const data = await res.json()
-        const eventsData = data.events as EventEntry[]
-
+        const eventsData = Array.isArray(data.events) ? data.events : []
+  
         setEvents(eventsData)
         localStorage.setItem(CACHE_KEY, JSON.stringify(eventsData))
         localStorage.setItem(CACHE_TIMESTAMP_KEY, now.toString())
@@ -41,7 +46,7 @@ export default function Page() {
         setLoading(false)
       }
     }
-
+  
     loadEvents()
   }, [])
 
