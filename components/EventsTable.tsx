@@ -374,10 +374,11 @@ const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(() => {
                   className={row ? "hover:bg-gray-800 transition-colors duration-200" : ""}
                 >
                   {columns.map((column, cellIndex) => {
+                  const hideOnMobile = cellIndex === 3 ? "hidden sm:table-cell" : ""
                     if (row) {
                       const cell = row.getVisibleCells()[cellIndex]
                       return (
-                        <td key={cell.id} className={`px-4 py-2 border-b border-gray-700`}>
+                        <td key={cell.id} className={`px-4 py-2 border-b border-gray-700 ${hideOnMobile}`}>
                           {cell.column.id === "name" ? (
                             <Link
                               href={row.original.url || `/event/${row.original.eventId}`}
@@ -392,7 +393,7 @@ const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(() => {
                         </td>
                       )
                     } else {
-                      return <td key={`empty-${cellIndex}`} className="px-4 py-2 border-b border-gray-700">&nbsp;</td>
+                      return <td key={`empty-${cellIndex}`} className={`px-4 py-2 border-b border-gray-700 ${hideOnMobile}`}>&nbsp;</td>
                     }
                   })}
                 </tr>
