@@ -42,10 +42,11 @@ export default function EventDetailPage() {
                 <p><strong>Location:</strong> {event.location}</p>
                 <p><strong>Address:</strong> {event.address.formatted}</p>
                 <p><strong>Category:</strong> {event.category}</p>
-                <p>
+                <p className="max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
                     <strong>Source:</strong>{" "}
-                    <a href={event.directLink} target="_blank" className="text-blue-500">
-                    {event.directLink}
+                    <a href={event.directLink} target="_blank"
+                        className="text-blue-500 overflow-hidden text-ellipsis whitespace-nowrap block max-w-full">
+                        {event.directLink}
                     </a>
                 </p>
             </div>
