@@ -20,7 +20,7 @@ export default function Page() {
       if (cached && cachedTimestamp && now - parseInt(cachedTimestamp) < CACHE_DURATION) {
         try {
           const parsed = JSON.parse(cached)
-          setEvents(Array.isArray(parsed) ? parsed : [])
+          setEvents(Array.isArray(parsed) ? parsed : Array.isArray(parsed.events) ? parsed.events : [])
           setLoading(false)
           return
         } catch {
@@ -34,8 +34,7 @@ export default function Page() {
         const res = await fetch(`${origin}/api/events`)
         if (!res.ok) throw new Error("Failed to fetch events")
         const data = await res.json()
-        const eventsData = Array.isArray(data.events) ? data.events : []
-  
+        const eventsData = Array.isArray(data) ? data : Array.isArray(data.events) ? data.events : []
         setEvents(eventsData)
         localStorage.setItem(CACHE_KEY, JSON.stringify(eventsData))
         localStorage.setItem(CACHE_TIMESTAMP_KEY, now.toString())
@@ -51,7 +50,6 @@ export default function Page() {
   }, [])
 
   if (loading) return <div>Loading events table…</div>
-  if (events === null) return <div>No events found (null)</div>
   if (events.length === 0) return <div>No events found</div>
 
 

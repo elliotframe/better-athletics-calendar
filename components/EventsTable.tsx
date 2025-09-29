@@ -186,7 +186,7 @@ export interface EventEntry {
   location: string;
   type: string;
   eventId: string;
-  url : string;
+  url?: string;
 }
 
 type ExtendedTable<T> = Table<T> & {
