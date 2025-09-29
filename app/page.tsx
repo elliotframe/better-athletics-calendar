@@ -46,7 +46,9 @@ export default function Page() {
   }, [])
 
   if (loading) return <div>Loading events table…</div>
-  // if (events.length === 0) return <div>No events found</div>
+  if (events === null) return <div>No events found (null)</div>
+  if (events.length === 0) return <div>No events found</div>
+
 
   return <EventsTable events={events} />
 }
