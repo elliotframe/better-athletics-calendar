@@ -24,8 +24,3 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
-
-th {
-  background-color: #04AA6D;
-  color: white;
-}

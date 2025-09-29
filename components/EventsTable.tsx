@@ -348,7 +348,7 @@ const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(() => {
             <col className="w-1/3 sm:w-1/5" />
           </colgroup>
 
-          <thead className="bg-gray-900 text-gray-300">
+          <thead className="bg-sky-700 text-gray-300">
             {extendedTable.getHeaderGroups().map(headerGroup => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header, idx) => (

@@ -35,24 +35,33 @@ export default function EventDetailPage() {
     if (!event) return <div>No event data</div>
 
     return (
-        <div className="p-4 max-w-xl mx-auto">
-        <h1 className="text-2xl font-bold mb-2">{event.name}</h1>
-        <p><strong>Date:</strong> {event.starts} – {event.ends}</p>
-        <p><strong>Location:</strong> {event.location}</p>
-        <p><strong>Address:</strong> {event.address.formatted}</p>
-        <p><strong>Category:</strong> {event.category}</p>
-        <p>
-            <strong>Direct link:</strong>{" "}
-            <a href={event.directLink} target="_blank" className="text-blue-500">
-            {event.directLink}
-            </a>
-        </p>
-        <div className="mt-4">
-            <h2 className="font-semibold mb-1">Details:</h2>
-            <div
-                className="prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: event.detail }}
-            />
+        <div className="p-4 max-w-2xl mx-auto">
+            <div className="mt-4 bg-neutral-900 p-3 rounded-md">
+                <h1 className="text-2xl font-bold mb-2">{event.name}</h1>
+                <p><strong>Date:</strong> {event.starts}</p>
+                <p><strong>Location:</strong> {event.location}</p>
+                <p><strong>Address:</strong> {event.address.formatted}</p>
+                <p><strong>Category:</strong> {event.category}</p>
+                <p>
+                    <strong>Source:</strong>{" "}
+                    <a href={event.directLink} target="_blank" className="text-blue-500">
+                    {event.directLink}
+                    </a>
+                </p>
+            </div>
+            <div className="mt-4 bg-neutral-900 p-3 rounded-md">
+                <h1 className="text-xl font-semibold mb-2">Details:</h1>
+                <hr className="my-2 border-sky-700 mb-6 w-8 border-t-2"></hr>
+                <div
+                    className="
+                        prose max-w-none 
+                        [&>p]:mb-6 
+                        [&_a]:text-blue-400 
+                        [&_a]:hover:text-blue-300 
+                        [&_a]:hover:underline
+                    "
+                    dangerouslySetInnerHTML={{ __html: event.detail }}
+                />
             </div>
         </div>
     )
