@@ -49,7 +49,13 @@ export default function EventsPageClient(){
     loadEvents()
   }, [])
 
-  if (loading) return <div>Loading events table…</div>
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-10">
+        <div className="h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    )
+  }
   if (events.length === 0) return <div>No events found</div>
 
   return <EventsTable events={events} />
