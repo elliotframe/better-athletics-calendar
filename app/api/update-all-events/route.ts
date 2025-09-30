@@ -122,8 +122,8 @@ function makeEventIdBMC(name: string, date: string) {
       .digest("hex");
   }
 
-  function fixStoreLinks(html: string): string {
-    return html.replace(/href="\/store\//g, 'href="https://scottishathletics.justgo.com/store/');
+  function fixDetail(html: string): string {
+    return html.replace(/href="\/store\//g, 'href="https://scottishathletics.justgo.com/store/').replace(/background-color:[^;]+;?/gi, '');
   }
 
 export async function GET(req: Request) {
@@ -193,7 +193,7 @@ export async function GET(req: Request) {
                 raw: detail.Address,
                 formatted: formatAddress(detail.Address),
             },
-            detail: detail.EventDetail ? fixStoreLinks(detail.EventDetail) : "",
+            detail: detail.EventDetail ? fixDetail(detail.EventDetail) : "",
             category: detail.EventCategory ?? "",
             directLink: detail.DirectLink ?? "",
             docHash: detail.EventDocIdHash,
