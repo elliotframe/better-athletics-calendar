@@ -55,14 +55,15 @@ export default function EventDetailPage() {
                 <hr className="my-2 border-sky-700 mb-6 w-8 border-t-2"></hr>
                 <div
                     className="
-                        prose max-w-none 
-                        [&>p]:mb-6 
-                        [&_a]:text-blue-400 
-                        [&_a]:hover:text-blue-300 
-                        [&_a]:hover:underline
+                    prose max-w-none
+                    [&_p]:mb-6
+                    [&_*]:!text-gray-200
+                    [&_a]:!text-blue-400
+                    [&_a:hover]:!text-blue-300
+                    [&_a:hover]:underline
                     "
                     dangerouslySetInnerHTML={{ __html: event.detail }}
-                />
+                    />
             </div>
         </div>
     )
