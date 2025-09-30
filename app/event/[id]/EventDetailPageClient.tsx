@@ -11,6 +11,11 @@ export default function EventDetailPageClient() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
+  function formatDate(date: string) {
+    const [year, month, day] = date.split("-")
+    return `${day}/${month}/${year}`
+  }
+
   useEffect(() => {
     if (loading) {
       document.title = "Loading event…"
@@ -49,7 +54,7 @@ export default function EventDetailPageClient() {
       <div className="p-4 max-w-2xl mx-auto">
         <div className="mt-4 bg-neutral-900 p-3 rounded-md">
           <h1 className="text-2xl font-bold mb-2">{event.name}</h1>
-          <p><strong>Date:</strong> {event.starts}</p>
+          <p><strong>Date:</strong> {formatDate(event.starts)}</p>
           <p><strong>Location:</strong> {event.location}</p>
           <p><strong>Address:</strong> {event.address.formatted}</p>
           <p><strong>Category:</strong> {event.category}</p>
