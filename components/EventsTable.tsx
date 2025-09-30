@@ -205,13 +205,6 @@ export default function EventsTable({ events }: { events: EventEntry[] }) {
 
 
   const pageParam = parseInt(searchParams.get("page") || "0", 10)
-  const sortParam = searchParams.get("sort") || "date_asc"
-  const typeFilterParam = searchParams.get("type") || ""
-  const monthFilterParam = searchParams.get("month") || "" 
-  const [sortField, sortDir] = sortParam.split("_")
-  const beforeParam = searchParams.get('before') || ""
-  const afterParam = searchParams.get('after') || ""
-  const typeParam = searchParams.get('type') || ""
   const [month, setMonth] = useState(searchParams.get('month') || "")
   const [type, setType] = useState(searchParams.get('type') || "")
 
@@ -247,25 +240,14 @@ export default function EventsTable({ events }: { events: EventEntry[] }) {
   []
 );
 
-  
-const [sorting, setSorting] = useState<SortingState>([
-  { id: sortField, desc: sortDir === "desc" },
-])
 const [pagination, setPagination] = useState<PaginationState>({
   pageIndex: pageParam,
   pageSize: 10,
 })
 const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(() => {
   const filters: ColumnFiltersState = []
-
-  if (type) {
     filters.push({ id: "type", value: type })
-  }
-
-  if (month) {
     filters.push({ id: "date", value: month })
-  }
-
   return filters
 })
 
@@ -273,9 +255,11 @@ const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(() => {
   const table = useReactTable({
     data: events,
     columns,
-    state: { sorting, pagination, columnFilters },
+    state: { pagination, columnFilters },
+    initialState: {
+      sorting: [{ id: "date", desc: false }],
+    },
     onColumnFiltersChange: setColumnFilters,
-    onSortingChange: setSorting,
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -294,41 +278,33 @@ const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(() => {
       return events.map((e) => e.date).sort((a,b) => new Date(b).getTime() - new Date(a).getTime())[0];
     },
     month,
-    setMonth,
     type,
-    setType,
+    setMonth: (newMonth: string) => {
+      setMonth(newMonth)
+      setColumnFilters((old) => {
+        const otherFilters = old.filter(f => f.id !== "date")
+        if (!newMonth) return otherFilters
+        return [...otherFilters, { id: "date", value: newMonth }]
+      })
+    },
+    setType: (newType: string) => {
+      setType(newType)
+      setColumnFilters((old) => {
+        const otherFilters = old.filter(f => f.id !== "type")
+        if (!newType || newType === 'All') return otherFilters
+        return [...otherFilters, { id: "type", value: newType }]
+      })
+    },
     getOriginalData: () => {return events},
   }
 
   useEffect(() => {
-    setColumnFilters((old) => {
-      const otherFilters = old.filter(f => f.id !== "date")
-      if (!month) return otherFilters
-      return [...otherFilters, { id: "date", value: month }]
-    })
-  }, [month])
-
-  useEffect(() => {
-    setColumnFilters((old) => {
-      const otherFilters = old.filter(f => f.id !== "type")
-      if (!type || type === 'All') return otherFilters
-      return [...otherFilters, { id: "type", value: type }]
-    })
-  }, [type])
-
-  useEffect(() => {
     const newParams = new URLSearchParams(searchParams.toString())
     newParams.set("page", String(pagination.pageIndex))
-    newParams.set(
-      "sort",
-      `${sorting[0]?.id}_${sorting[0]?.desc ? "desc" : "asc"}`
-    )
     newParams.set("month", extendedTable.month);
-  
     newParams.set('type', extendedTable.type);
-  
     router.replace(`?${newParams.toString()}`)
-  }, [pagination.pageIndex, sorting, columnFilters, extendedTable.month, router, searchParams])
+  }, [pagination.pageIndex, month, type])
 
 
   return (
