@@ -51,7 +51,7 @@ export default function EventDetailPageClient() {
 
   return (
     <div>
-      <div className="p-4 max-w-2xl mx-auto">
+      <div className="p-4 max-w-2xl mx-auto text-gray-50">
         <div className="mt-4 bg-neutral-900 p-3 rounded-md">
           <h1 className="text-2xl font-bold mb-2">{event.name}</h1>
           <p><strong>Date:</strong> {formatDate(event.starts)}</p>
