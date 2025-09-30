@@ -77,6 +77,7 @@ export default function EventDetailPageClient() {
               [&_a]:!text-blue-400
               [&_a:hover]:!text-blue-300
               [&_a:hover]:underline
+              [&_*]:!whitespace-normal
             "
             dangerouslySetInnerHTML={{ __html: event.detail }}
           />
