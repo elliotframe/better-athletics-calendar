@@ -35,21 +35,21 @@ function Pagination({table}: {table: ExtendedTable<EventEntry>}) {
 
   return (
     <div className="flex items-center gap-2 mt-6 mb-4 justify-center">
-      <button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} className="px-3 py-1.5 rounded-md border border-gray-700 bg-gray-800 disabled:opacity-50 text-gray-200 hover:bg-gray-700 transition-colors">
+      <button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} className="px-3 py-1.5 rounded-md border border-gray-700 bg-neutral-900 disabled:opacity-50 text-gray-200 hover:bg-neutral-800 transition-colors">
         Prev
       </button>
 
       {pages.map((p) => {
         return(
           <button key={p} onClick={() => table.setPageIndex(p)} className=
-          {p===pageIndex ? "px-3 py-1.5 rounded-md border border-gray-700 bg-gray-200 text-gray-800 hover:bg-gray-100 transition-colors"
-                          : "px-3 py-1.5 rounded-md border border-gray-700 bg-gray-800 text-gray-200 hover:bg-gray-700 transition-colors"}>
+          {p===pageIndex ? "px-3 py-1.5 rounded-md border border-gray-700 bg-sky-700 text-gray-300 hover:bg-gray-100 transition-colors"
+                          : "px-3 py-1.5 rounded-md border border-gray-700 bg-neutral-900 text-gray-200 hover:bg-neutral-800 transition-colors"}>
             {p + 1}
           </button>
         )
       })}
 
-      <button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} className="px-3 py-1.5 rounded-md border border-gray-700 bg-gray-800 disabled:opacity-50 text-gray-200 hover:bg-gray-700 transition-colors">
+      <button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} className="px-3 py-1.5 rounded-md border border-gray-700 bg-neutral-900 disabled:opacity-50 text-gray-200 hover:bg-neutral-800 transition-colors">
         Next
       </button>
     
@@ -117,11 +117,35 @@ function MonthFilterControls({ table }: { table: ExtendedTable<EventEntry> }){
     return data;
   }
 
+  const monthContent = (
+    <div className="px-4 py-3 bg-neutral-950 text-white flex flex-col sm:flex-row sm:justify-start sm:gap-12">
+      {Object.entries(getYearsAndMonths(earliest, latest)).map(([year, months]) => (
+        <div key={year} className="flex flex-col mb-4 sm:mb-0">
+          <span className="font-bold text-gray-300 mb-2">{year}</span>
+          <div className="flex flex-wrap gap-2">
+            {months.map((month) => {
+              const isSelected = table.month === `${year}-${month}`
+              return (
+                <button key={month} className={`px-3 py-1.5 rounded-md border text-sm transition-colors duration-200
+                  ${isSelected
+                    ? "bg-sky-700 border-sky-700 text-white"
+                    : "bg-neutral-800 border-gray-700 text-gray-200 hover:bg-neutral-700" }`}
+                  onClick={isSelected ? () => resetMonth(table) : () => filterByMonth(table, year, month)}>
+                  {month}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div className="border border-gray-700 rounded-md overflow-hidden mb-4">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex justify-between items-center px-4 py-2 bg-gray-900 text-white font-semibold hover:bg-gray-800 transition-colors"
+        className="w-full flex justify-between items-center px-4 py-2 bg-neutral-950 text-white font-semibold hover:bg-neutral-900 transition-colors"
       >
         <span>Filter by Month</span>
         <span className="transform transition-transform duration-200">
@@ -129,30 +153,11 @@ function MonthFilterControls({ table }: { table: ExtendedTable<EventEntry> }){
         </span>
       </button>
 
-      {isOpen && (
-        <div className="px-4 py-3 bg-gray-800 text-white flex flex-col sm:flex-row sm:justify-start sm:gap-12">
-          {Object.entries(getYearsAndMonths(earliest, latest)).map(([year, months]) => (
-            <div key={year} className="flex flex-col mb-4 sm:mb-0">
-              <span className="font-bold text-gray-300 mb-2">{year}</span>
-              <div className="flex flex-wrap gap-2">
-                {months.map((month) => {
-                  const isSelected = table.month === `${year}-${month}`
-
-                  return (
-                    <button key={month} className={`px-3 py-1.5 rounded-md border text-sm transition-colors duration-200
-                      ${isSelected
-                        ? "bg-blue-500 border-blue-500 text-white"
-                      : "bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700" }`}
-                      onClick={isSelected ? () => resetMonth(table) : () => filterByMonth(table, year, month)}>
-                        {month}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="invisible h-0 overflow-hidden" aria-hidden="true">
+        {monthContent}
+      </div>
+      {/* Visible content */}
+      {isOpen && monthContent}
     </div>
   )
 }
@@ -163,11 +168,11 @@ function TypeFilterControls({ table }: { table: ExtendedTable<EventEntry> }) {
   const types = Array.from( new Set(table.getOriginalData().map(e => e.type)))
 
   return (
-    <div className="border border-gray-700 rounded-md overflow-hidden mb-4 bg-gray-800 text-white px-4 py-2 flex items-center gap-2">
+    <div className="border border-gray-700 rounded-md overflow-hidden mb-4 bg-neutral-950 text-white px-4 py-2 flex items-center gap-2">
       <label htmlFor="type-filter" className="font-semibold">Filter by Type:</label>
       <select
         id="type-filter"
-        className="bg-gray-700 border border-gray-600 text-white rounded px-2 py-1 text-sm"
+        className="bg-neutral-800 border border-gray-600 text-white rounded px-2 py-1 text-sm"
         value={currentType}
         onChange={(e) => table.setType(e.target.value)}
       >
@@ -309,8 +314,10 @@ const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(() => {
 
   return (
     <div>
-      <MonthFilterControls table = {extendedTable} />
-      <TypeFilterControls table = {extendedTable} />
+      <div className="flex flex-col sm:flex-row sm:items-start sm:gap-4 mb-4">
+      <MonthFilterControls table={extendedTable} />
+      <TypeFilterControls table={extendedTable} />
+    </div>
       <div className="block sm:hidden">
         <Pagination table = {extendedTable} />
       </div>
@@ -347,7 +354,7 @@ const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(() => {
               return (
                 <tr
                   key={row ? row.id : `empty-${rowIndex}`}
-                  className={row ? "hover:bg-gray-800 transition-colors duration-200" : ""}
+                  className={row ? "bg-neutral-900 hover:bg-neutral-800 transition-colors duration-100" : "bg-neutral-900"}
                 >
                   {columns.map((column, cellIndex) => {
                   const hideOnMobile = cellIndex === 3 ? "hidden sm:table-cell" : ""
