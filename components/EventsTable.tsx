@@ -42,7 +42,7 @@ function Pagination({table}: {table: ExtendedTable<EventEntry>}) {
       {pages.map((p) => {
         return(
           <button key={p} onClick={() => table.setPageIndex(p)} className=
-          {p===pageIndex ? "px-3 py-1.5 rounded-md border border-gray-700 bg-sky-700 text-gray-300 hover:bg-gray-100 transition-colors"
+          {p===pageIndex ? "px-3 py-1.5 rounded-md border border-gray-700 bg-sky-700 text-gray-300 transition-colors"
                           : "px-3 py-1.5 rounded-md border border-gray-700 bg-neutral-900 text-gray-200 hover:bg-neutral-800 transition-colors"}>
             {p + 1}
           </button>
