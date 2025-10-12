@@ -229,9 +229,11 @@ export async function GET(req: Request) {
     for (const collectionName of ["events", "cache"]) {
         const snapshot = await db.collection(collectionName).get();
         const batch = db.batch();
+
+        const date = collectionName === 'events' ? 'starts' : 'date';
       
         snapshot.forEach((doc) => {
-          if (!processedEventIds.includes(doc.id)) {
+          if (!isWithinDateRange(doc.get('date'))) {
             batch.delete(doc.ref);
           }
         });
