@@ -233,7 +233,7 @@ export async function GET(req: Request) {
         const date = collectionName === 'events' ? 'starts' : 'date';
       
         snapshot.forEach((doc) => {
-          if (!isWithinDateRange(doc.get('date'))) {
+          if (!isWithinDateRange(doc.get(date))) {
             batch.delete(doc.ref);
           }
         });
