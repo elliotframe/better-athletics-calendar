@@ -385,7 +385,7 @@ const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(() => {
           </tbody>
         </table>
       </div>
-      <div className="hidden sm:block">
+      <div>
         <Pagination table = {extendedTable}/>
       </div>
     </div>
